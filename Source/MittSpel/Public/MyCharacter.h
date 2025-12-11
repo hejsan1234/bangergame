@@ -2,9 +2,14 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
+#include "UObject/ObjectMacros.h"
+#include "UObject/Object.h"
 #include "GameFramework/Character.h"
+#include "CoreMinimal.h"
 #include "MyCharacter.generated.h"
+
+class AAPlanetActor;
+class UPlanetMovementComponent;
 
 UCLASS()
 class MITTSPEL_API AMyCharacter : public ACharacter
@@ -13,20 +18,23 @@ class MITTSPEL_API AMyCharacter : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	AMyCharacter();
+	AMyCharacter(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MoveSpeed = 600.0f;
+	float MoveSpeed = 1200.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float JumpHeight = 600.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float Sensitivity = 0.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet Gravity")
+	AAPlanetActor* PlanetRef = nullptr;
 
 public:	
 	// Called every frame
