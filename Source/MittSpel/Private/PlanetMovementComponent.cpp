@@ -6,6 +6,11 @@
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h" // Add this include to resolve the incomplete type error for ACharacter
 
+UPlanetMovementComponent::UPlanetMovementComponent()
+{
+    PlanetGravityScale = 1.0f;
+}
+
 void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 {
     if (!CharacterOwner || !UpdatedComponent || !Planet)
@@ -49,8 +54,6 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 	const float GravityStrength = Planet->GravityStrength;
 	Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
 	// print out velocity for debugging
-    UE_LOG(LogTemp, Warning, TEXT("GravityStrength: %s"), *Velocity.ToString());
-    UE_LOG(LogTemp, Warning, TEXT("GravityScale: %f"), PlanetGravityScale);
 
     // 5) Bromsa om ingen input
     if (MoveDir.IsNearlyZero())
@@ -78,4 +81,51 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     {
         SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
     }
+
+	//FVector LookDir = CharacterOwner->GetControlRotation().Vector();
+	//LookDir = FVector::VectorPlaneProject(LookDir, Up).GetSafeNormal();
+
+ //   if (LookDir.IsNearlyZero())
+ //   {
+ //       LookDir = FVector::VectorPlaneProject(CharacterOwner->GetActorForwardVector(), Up).GetSafeNormal();
+	//}
+
+	//const FRotator TargetRot = FRotationMatrix::MakeFromXZ(LookDir, Up).Rotator();
+	//const FRotator NewRot = FMath::RInterpTo(CharacterOwner->GetActorRotation(), TargetRot, DeltaTime, 12.0f);
+
+	//CharacterOwner->SetActorRotation(NewRot);
+
+    //Karaktär riktning och upp-vektor
+
+	//static bool bDidRotate = false;
+ //   if (!bDidRotate) {
+	//	FRotator Rot = CharacterOwner->GetActorRotation();
+	//	UE_LOG(LogTemp, Warning, TEXT("Before Adjusting Actor Rotation: %s"), *Rot.ToString());
+	//	Rot.Yaw += 90.0f * DeltaTime; // Justera yaw med 90 grader
+	//	CharacterOwner->SetActorRotation(Rot);
+	//	FRotator NewRot = CharacterOwner->GetActorRotation();
+	//	UE_LOG(LogTemp, Warning, TEXT("After Adjusting Actor Rotation: %s"), *NewRot.ToString());
+	//	//bDidRotate = true;
+ //   }
+
+	//UE_LOG(LogTemp, Warning, TEXT("Actor Rotation: %s"), *NewRot.ToString());
+
+    // Gravitation mot planetens centrum
+
+    // --- ROTERA GUBBEN EFTER RÖRELSERIKTNING (utan mus) ---
+
+// Ta bort grav-komponenten så vi bara får rörelse längs ytan
+    FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);
+
+	FVector Forward = FVector::VectorPlaneProject(GetCharacterOwner()->GetActorForwardVector(), Up).GetSafeNormal();
+
+    // om vi står nästan still: behåll nuvarande forward men se till att den ligger på tangentplanet
+    if (Forward.IsNearlyZero())
+    {
+        Forward = FVector::VectorPlaneProject(CharacterOwner->GetActorForwardVector(), Up).GetSafeNormal();
+    }
+
+    const FRotator TargetRot = FRotationMatrix::MakeFromXZ(Forward, Up).Rotator();
+    const FRotator NewRot = FMath::RInterpTo(CharacterOwner->GetActorRotation(), TargetRot, DeltaTime, 12.f);
+    CharacterOwner->SetActorRotation(NewRot);
 }

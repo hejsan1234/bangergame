@@ -6,6 +6,9 @@
 #include "UObject/Object.h"
 #include "GameFramework/Character.h"
 #include "CoreMinimal.h"
+#include "Camera/CameraComponent.h"
+#include "Components/SceneComponent.h"
+
 #include "MyCharacter.generated.h"
 
 class AAPlanetActor;
@@ -25,7 +28,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float MoveSpeed = 1200.0f;
+	float MoveSpeed = 1800.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float JumpHeight = 600.0f;
@@ -35,6 +38,16 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet Gravity")
 	AAPlanetActor* PlanetRef = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* Camera = nullptr;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	USceneComponent* CameraPivot = nullptr;
+
+	float PitchDeg = 0.f;
+
+
 
 public:	
 	// Called every frame
