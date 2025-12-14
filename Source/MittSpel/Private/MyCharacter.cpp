@@ -59,18 +59,26 @@ void AMyCharacter::BeginPlay()
 
 	if (PlanetRef)
 	{
-		FVector Center = PlanetRef->GetActorLocation();
-		FVector Pos = GetActorLocation();
+		const FVector Center = PlanetRef->GetActorLocation();
+		FVector FromCenter = GetActorLocation() - Center;
 
-		FVector FromCenter = Pos - Center;
-		FVector Dir = FromCenter.GetSafeNormal();
+		if (FromCenter.IsNearlyZero())
+		{
+			FromCenter = FVector::UpVector;
+		}
 
-		float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-		float TargetRadius = PlanetRef->PlanetRadius + CapsuleHalfHeight;
+		const FVector Dir = FromCenter.GetSafeNormal();
 
-		FVector NewPos = Center + Dir * TargetRadius;
-		SetActorLocation(NewPos);
+		const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+		const float PlanetRadiusWS = PlanetRef->GetPlanetRadiusWS();
+		const float Margin = 5.f;
+
+		const float TargetRadius = PlanetRadiusWS + CapsuleHalfHeight + Margin;
+
+		SetActorLocation(Center + Dir * TargetRadius, false, nullptr, ETeleportType::TeleportPhysics);
 	}
+
 
 	// Koppla planeten till vår custom movement component
 	if (UPlanetMovementComponent* PlanetMove = Cast<UPlanetMovementComponent>(GetCharacterMovement()))
@@ -150,7 +158,6 @@ void AMyCharacter::Turn(float Value) {
 }
 
 void AMyCharacter::LookUp(float Value) {
-	UE_LOG(LogTemp, Warning, TEXT("LookUp Value: %f"), Value);
 	if (Value == 0.f) return;
 
 	PitchDeg = FMath::Clamp(PitchDeg + Value * Sensitivity*2, -85.f, 85.f);
@@ -158,9 +165,9 @@ void AMyCharacter::LookUp(float Value) {
 }
 
 void AMyCharacter::StartJump() {
-	Jump();
+	bIsJumping = true;
 }
 
 void AMyCharacter::StopJump() {
-	StopJumping();
+	bIsJumping = false;
 }

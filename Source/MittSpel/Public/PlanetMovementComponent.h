@@ -27,6 +27,7 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
 	float PlanetGravityScale = 1.0f;
+	bool bGrounded = false;
 
 protected:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;

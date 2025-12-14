@@ -1,41 +1,32 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "APlanetActor.h"
+#include "Components/StaticMeshComponent.h"
 
-// Sets default values
 AAPlanetActor::AAPlanetActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+	PlanetMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PlanetMesh"));
+	RootComponent = PlanetMesh;
 }
 
-// Called when the game starts or when spawned
 void AAPlanetActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	FVector Origin;
-	FVector Extents;
-	GetActorBounds(true, Origin, Extents);
-
-	PlanetRadius = Extents.GetMax();
-
-	UE_LOG(LogTemp, Warning, TEXT("Planet radius set to: %f"), PlanetRadius);
+	UE_LOG(LogTemp, Warning, TEXT("Planet radius (WS): %f"), GetPlanetRadiusWS());
 }
 
-// Called every frame
-void AAPlanetActor::Tick(float DeltaTime)
+float AAPlanetActor::GetPlanetRadiusWS() const
 {
-	Super::Tick(DeltaTime);
+	if (bOverridePlanetRadius)
+		return PlanetRadius;
 
+	if (!PlanetMesh)
+		return PlanetRadius;
+
+	return PlanetMesh->Bounds.SphereRadius; // world space, scale inräknad
 }
 
 FVector AAPlanetActor::GetGravityDirection(const FVector& Location) const
 {
-	FVector Direction = Location - GetActorLocation();
-	Direction.Normalize();
-	return -Direction;
+	return (GetActorLocation() - Location).GetSafeNormal();
 }
-
