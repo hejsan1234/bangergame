@@ -67,14 +67,16 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         {
 			bGrounded = true;
         }
-
         SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
     }
 
     if (bGrounded)
     {
-		Velocity = FVector::VectorPlaneProject(Velocity, Up);
-	}
+        const float StickSpeed = 30.f; // cm/s
+
+        Velocity = FVector::VectorPlaneProject(Velocity, Up)
+            - Up * StickSpeed;
+    }
 
     if (bGrounded)
     {
