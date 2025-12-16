@@ -5,6 +5,7 @@
 #include "APlanetActor.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h" // Add this include to resolve the incomplete type error for ACharacter
+#include "Components/CapsuleComponent.h"
 #include "MyCharacter.h"
 
 UPlanetMovementComponent::UPlanetMovementComponent()
@@ -20,6 +21,8 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         PhysFalling(DeltaTime, Iterations);
         return;
     }
+
+    bGrounded = false;
 
     AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner);
 
@@ -46,7 +49,10 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     const float MaxAccel = GetMaxAcceleration();
 
 	const float GravityStrength = Planet->GravityStrength;
-	Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
+
+    if (!bGrounded) {
+        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
+    }
 	// print out velocity for debugging
 
     // 7) Flytta kapseln
@@ -64,31 +70,44 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
         SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
     }
-    else {
-		bGrounded = false;
-    }
-
-    FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);
 
     if (bGrounded)
     {
-        Velocity = FVector::VectorPlaneProject(Velocity, Up);
+		Velocity = FVector::VectorPlaneProject(Velocity, Up);
+	}
+
+    if (bGrounded)
+    {
+		UE_LOG(LogTemp, Warning, TEXT("Grounded"));
     }
+    else {
+		UE_LOG(LogTemp, Warning, TEXT("Airborne"));
+    }
+
+    FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);
 
     // 3) Acceleration från input
     FVector Accel = FVector::ZeroVector;
     if (!MoveDir.IsNearlyZero())
     {
-        FVector tempVelocity = Velocity;
-        FVector tempAccel = Accel;
-        
-        //TangentSpeed < MaxSpeed
-        if (!bGrounded) {
-            tempAccel = MoveDir * MaxAccel; // mindre kontroll i luften
-			tempVelocity += tempAccel * DeltaTime;
-            if (tempVelocity.Size() < Velocity.Size()) {
-                Accel = MoveDir * MaxAccel * 0.2f;
-			}
+        if (!bGrounded)
+        {
+            const float AirAccelScale = 0.5f;
+            const float AirBrakeScale = 0.5f;
+
+            const float TangentSpeed = TangentVel.Size();
+
+            const bool bIsBrakingInput = (TangentSpeed > KINDA_SMALL_NUMBER) && (FVector::DotProduct(MoveDir, TangentVel.GetSafeNormal()) < 0.0f);
+            const FVector TestVel = TangentVel + (MoveDir * MaxAccel * AirAccelScale * DeltaTime);
+            const float TestSpeed = TestVel.Size();
+
+            if (bIsBrakingInput)
+            {
+                Accel = MoveDir * MaxAccel * AirBrakeScale;
+            }
+            else if (TestSpeed < MaxSpeed) {
+                Accel = MoveDir * MaxAccel * AirAccelScale;
+            }
         }
         else {
             Accel = MoveDir * MaxAccel;
@@ -112,7 +131,6 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     }
 
 	FVector DebugVel = Velocity * DeltaTime;
-	UE_LOG(LogTemp, Warning, TEXT("Velocity: %s"), *DebugVel.ToString());
 
     // 5) Bromsa om ingen inpup
     FVector RadialVel = Velocity - TangentVel;
@@ -126,6 +144,17 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         // sätt tillbaka radial
         Velocity = TangentVel + RadialVel;
     }
+
+	// Bromsa om ingen input i luften också
+    if (!bGrounded && MoveDir.IsNearlyZero())
+    {
+        const FVector OldVel = Velocity;
+        Velocity = TangentVel;
+        ApplyVelocityBraking(DeltaTime, BrakingFriction, BrakingDecelerationFlying);
+        TangentVel = Velocity;
+        // sätt tillbaka radial
+        Velocity = TangentVel + RadialVel;
+	}
 
     // 6) Clampa toppfart
 
@@ -152,4 +181,44 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     const FRotator TargetRot = FRotationMatrix::MakeFromXZ(Forward, Up).Rotator();
     const FRotator NewRot = FMath::RInterpTo(CharacterOwner->GetActorRotation(), TargetRot, DeltaTime, 12.f);
     CharacterOwner->SetActorRotation(NewRot);
+}
+
+bool UPlanetMovementComponent::CheckGrounded(
+    const FVector& Up,
+    float ProbeDistance,
+    FHitResult& OutHit
+)
+{
+    if (!CharacterOwner)
+        return false;
+
+    UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent();
+    if (!Capsule)
+        return false;
+
+    const float HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+    const FVector Start = UpdatedComponent->GetComponentLocation() - Up * (HalfHeight - 1.f);
+    const FVector End = Start - Up * ProbeDistance;
+
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(CharacterOwner);
+
+    bool bHit = GetWorld()->SweepSingleByChannel(
+        OutHit,
+        Start,
+        End,
+        FQuat::Identity,
+        ECC_WorldStatic,
+        FCollisionShape::MakeCapsule(
+            Capsule->GetScaledCapsuleRadius(),
+            Capsule->GetScaledCapsuleHalfHeight()
+        ),
+        Params
+    );
+
+    if (!bHit)
+        return false;
+
+    const float Dot = FVector::DotProduct(OutHit.Normal, Up);
+    return Dot > 0.7f;
 }

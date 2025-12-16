@@ -31,4 +31,6 @@ public:
 
 protected:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
+
+	bool CheckGrounded(const FVector& Up, float ProbeDistance, FHitResult& OutHit);
 };
