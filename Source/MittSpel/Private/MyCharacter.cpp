@@ -30,7 +30,7 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	Camera->bUsePawnControlRotation = false;
 
 	// valfritt: placera kameran
-	Camera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
+	Camera->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
 
 	if (auto* Move = GetCharacterMovement())
 	{
@@ -57,27 +57,15 @@ void AMyCharacter::BeginPlay()
 		MoveCompBase->SetMovementMode(MOVE_Custom);
 	}
 
-	if (PlanetRef)
-	{
-		const FVector Center = PlanetRef->GetActorLocation();
-		FVector FromCenter = GetActorLocation() - Center;
-
-		if (FromCenter.IsNearlyZero())
+	GetWorldTimerManager().SetTimerForNextTick([this]()
 		{
-			FromCenter = FVector::UpVector;
-		}
+			if (!PlanetRef) return;
 
-		const FVector Dir = FromCenter.GetSafeNormal();
+			const FTransform SpawnTM = PlanetRef->GetSpawnTransform();
+			TeleportTo(SpawnTM.GetLocation(), SpawnTM.Rotator(), false, true);
 
-		const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-
-		const float PlanetRadiusWS = PlanetRef->GetPlanetRadiusWS();
-		const float Margin = 5.f;
-
-		const float TargetRadius = PlanetRadiusWS + CapsuleHalfHeight + Margin;
-
-		SetActorLocation(Center + Dir * TargetRadius, false, nullptr, ETeleportType::TeleportPhysics);
-	}
+			UE_LOG(LogTemp, Warning, TEXT("Initial teleport done via next tick"));
+	});
 
 
 	// Koppla planeten till vår custom movement component
@@ -90,13 +78,16 @@ void AMyCharacter::BeginPlay()
 	{
 		Camera->AttachToComponent(CameraPivot, FAttachmentTransformRules::KeepRelativeTransform);
 	}
-	
 }
 
 // Called every frame
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	const FVector PlayerLoc = GetActorLocation();
+	const FVector PlanetLoc = PlanetRef->GetActorLocation();
+	const float Dist = FVector::Dist(PlayerLoc, PlanetLoc);
 }
 
 // Called to bind functionality to input

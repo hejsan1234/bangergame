@@ -58,6 +58,7 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     // 7) Flytta kapseln
     FVector Delta = Velocity * DeltaTime;
     FHitResult Hit;
+
     SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
 
     if (Hit.IsValidBlockingHit())
@@ -76,14 +77,6 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
         Velocity = FVector::VectorPlaneProject(Velocity, Up)
             - Up * StickSpeed;
-    }
-
-    if (bGrounded)
-    {
-		UE_LOG(LogTemp, Warning, TEXT("Grounded"));
-    }
-    else {
-		UE_LOG(LogTemp, Warning, TEXT("Airborne"));
     }
 
     FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);

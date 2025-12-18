@@ -5,6 +5,7 @@
 #include "APlanetActor.generated.h"
 
 class UStaticMeshComponent;
+class AAPlanetActor;
 
 UCLASS()
 class MITTSPEL_API AAPlanetActor : public AActor
@@ -36,6 +37,40 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Planet Properties")
 	UStaticMeshComponent* GetPlanetMesh() const { return PlanetMesh; }
 
+	// Orbiting properties
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	AAPlanetActor* ParentBody = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	float OrbitRadius = 10000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	float OrbitSpeedDegPerSec = 5.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	FVector OrbitAxis = FVector::UpVector;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	float PhaseDeg = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	bool bEnableOrbit = false;
+
+	// Spawn
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spawn")
+	USceneComponent* SpawnPoint;
+
+	UFUNCTION(BlueprintPure, Category = "Spawn")
+	FTransform GetSpawnTransform() const;
+
+
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
+
+private:
+	void UpdateOrbit(float DeltaTime);
+	float OrbitAngleDeg = 0.f;
+	void UpdateSpawnPoint();
 };
