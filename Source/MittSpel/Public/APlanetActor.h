@@ -64,6 +64,15 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Spawn")
 	FTransform GetSpawnTransform() const;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Simulation")
+	FVector SimPos = FVector::ZeroVector;
+
+	UFUNCTION(BlueprintPure, Category = "Simulation")
+	FVector GetCenterInFrame(const FVector& AnchorSimPos) const
+	{
+		return SimPos - AnchorSimPos;
+	}
+
 
 protected:
 	virtual void BeginPlay() override;

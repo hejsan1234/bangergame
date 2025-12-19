@@ -17,6 +17,9 @@ void AAPlanetActor::BeginPlay()
 	Super::BeginPlay();
 	OrbitAngleDeg = PhaseDeg;
 	OrbitAxis = OrbitAxis.GetSafeNormal();
+
+	SimPos = GetActorLocation();
+
 	if (bEnableOrbit && ParentBody)
 	{
 		UpdateOrbit(0.f);
@@ -37,7 +40,7 @@ float AAPlanetActor::GetPlanetRadiusWS() const
 
 FVector AAPlanetActor::GetGravityDirection(const FVector& Location) const
 {
-	return (GetActorLocation() - Location).GetSafeNormal();
+	return (SimPos - Location).GetSafeNormal();
 }
 
 void AAPlanetActor::Tick(float DeltaTime)
@@ -51,14 +54,24 @@ void AAPlanetActor::Tick(float DeltaTime)
 
 void AAPlanetActor::UpdateOrbit(float DeltaTime)
 {
-	OrbitAngleDeg = FMath::Fmod(OrbitAngleDeg + OrbitSpeedDegPerSec * DeltaTime, 360.f);
+	OrbitAngleDeg = FMath::Fmod(
+		OrbitAngleDeg + OrbitSpeedDegPerSec * DeltaTime,
+		360.f
+	);
 
-	const FVector ParentPos = ParentBody->GetActorLocation();
-	const FQuat Q(OrbitAxis, FMath::DegreesToRadians(OrbitAngleDeg));
+	const FQuat Q(
+		OrbitAxis.GetSafeNormal(),
+		FMath::DegreesToRadians(OrbitAngleDeg)
+	);
 
 	const FVector LocalOffset = Q.RotateVector(FVector(OrbitRadius, 0.f, 0.f));
-	SetActorLocation(ParentPos + LocalOffset);
+
+	if (ParentBody)
+	{
+		SimPos = ParentBody->SimPos + LocalOffset;
+	}
 }
+
 
 FTransform AAPlanetActor::GetSpawnTransform() const
 {

@@ -3,10 +3,14 @@
 
 #include "PlanetMovementComponent.h"
 #include "APlanetActor.h"
+#include "SolarSystemsManager.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h" // Add this include to resolve the incomplete type error for ACharacter
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "MyCharacter.h"
+
+// Add this as a member variable in your UPlanetMovementComponent class (in the header file, e.g., PlanetMovementComponent.h):
 
 UPlanetMovementComponent::UPlanetMovementComponent()
 {
@@ -22,15 +26,31 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         return;
     }
 
+
+    if (!IsValid(SolarSystemManager))
+    {
+        SolarSystemManager = Cast<ASolarSystemManager>(
+            UGameplayStatics::GetActorOfClass(GetWorld(), ASolarSystemManager::StaticClass())
+        );
+    }
+
     bGrounded = false;
 
     AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner);
 
-    const FVector Center = Planet->GetActorLocation();
-    const FVector Pos = UpdatedComponent->GetComponentLocation();
+    const FVector AnchorSim = IsValid(SolarSystemManager)
+        ? SolarSystemManager->GetAnchorSimPos()
+        : FVector::ZeroVector;
+
+    const FVector Center = Planet->GetCenterInFrame(AnchorSim); // render-frame
+    const FVector Pos = UpdatedComponent->GetComponentLocation(); // render-frame
 
     FVector ToCenter = Center - Pos;
     float Distance = ToCenter.Size();
+
+    const float Surface = Planet->GetPlanetRadiusWS(); // eller Planet->RadiusWS
+    const float Altitude = Distance - Surface;
+
     if (Distance < KINDA_SMALL_NUMBER)
         return;
 
@@ -176,6 +196,47 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     const FRotator TargetRot = FRotationMatrix::MakeFromXZ(Forward, Up).Rotator();
     const FRotator NewRot = FMath::RInterpTo(CharacterOwner->GetActorRotation(), TargetRot, DeltaTime, 12.f);
     CharacterOwner->SetActorRotation(NewRot);
+
+    //Sätt planetAnkare
+    
+	bPrev += DeltaTime;
+    if (IsValid(SolarSystemManager) && bPrev > 0.05)
+    {
+		UE_LOG(LogTemp, Warning, TEXT("Inne i andra ankare"));
+		bPrev = 0;
+        if (!bAnchoredToPlanet)
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Inne i falsk: %f"), Altitude);
+
+            // Gå in i ankare om vi är grounded eller väldigt nära ytan
+            if (bGrounded || Altitude < AnchorEnterMargin)
+            {
+                bAnchoredToPlanet = true;
+                SolarSystemManager->RequestAnchor(Planet);
+            }
+            else
+            {
+                //SolarSystemManager->SetAnchor(Planet);
+                //SolarSystemManager->ClearAnchor();
+            }
+        }
+        else
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Inne i true: %f"), Altitude);
+
+            // Stanna kvar ankare även om grounded fladdrar / vi hoppar lite
+            if (Altitude > AnchorExitMargin)
+            {
+                bAnchoredToPlanet = false;
+                //SolarSystemManager->SetAnchor(Planet);
+                SolarSystemManager->ClearAnchorRequest();
+            }
+            else
+            {
+                //SolarSystemManager->SetAnchor(Planet);
+            }
+        }
+    }
 }
 
 bool UPlanetMovementComponent::CheckGrounded(
