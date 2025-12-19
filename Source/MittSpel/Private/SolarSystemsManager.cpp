@@ -22,6 +22,33 @@ void ASolarSystemManager::Tick(float DeltaTime)
     const FVector OldAnchorSimPos = AnchorSimPos;
     AnchorSimPos = AnchorBody ? AnchorBody->SimPos : FVector::ZeroVector;
 
+    AAPlanetActor* Best = nullptr;
+    float BestDistSq = TNumericLimits<float>::Max();
+
+    const FVector PlayerPos = UGameplayStatics::GetPlayerPawn(GetWorld(), 0)
+        ? UGameplayStatics::GetPlayerPawn(GetWorld(), 0)->GetActorLocation()
+        : FVector::ZeroVector;
+
+    for (AAPlanetActor* Body : Bodies)
+    {
+        if (!Body) continue;
+
+        const FVector Center = Body->GetCenterInFrame(AnchorSimPos); // render-frame
+        const float DistSq = FVector::DistSquared(PlayerPos, Center);
+
+        const float Range = Body->GravityRange;
+        const float RangeSq = Range * Range;
+
+        if (DistSq <= RangeSq && DistSq < BestDistSq)
+        {
+            BestDistSq = DistSq;
+			UE_LOG(LogTemp, Warning, TEXT("SolarSystemManager: Body %s is within gravity range (dist sq: %f, range sq: %f)"), *Body->GetName(), DistSq, RangeSq);
+            Best = Body;
+        }
+    }
+
+    ActiveGravityBody = Best;
+
     const bool bAnchorChanged = (PrevAnchorBody != AnchorBody);
     PrevAnchorBody = AnchorBody;
 

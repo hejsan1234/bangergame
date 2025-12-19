@@ -19,19 +19,27 @@ UPlanetMovementComponent::UPlanetMovementComponent()
 
 void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 {
-
-    if (!CharacterOwner || !UpdatedComponent || !Planet)
-    {
-        PhysFalling(DeltaTime, Iterations);
-        return;
-    }
-
-
     if (!IsValid(SolarSystemManager))
     {
         SolarSystemManager = Cast<ASolarSystemManager>(
             UGameplayStatics::GetActorOfClass(GetWorld(), ASolarSystemManager::StaticClass())
         );
+    }
+
+    AAPlanetActor* GravPlanet = IsValid(SolarSystemManager)
+        ? SolarSystemManager->GetActiveGravityBody()
+        : nullptr;
+
+    if (!GravPlanet)
+    {
+        return;
+    }
+
+    if (!CharacterOwner || !UpdatedComponent || !Planet)
+    {
+		UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Missing required references, falling back to default physics."));
+        PhysFalling(DeltaTime, Iterations);
+        return;
     }
 
     bGrounded = false;
@@ -42,13 +50,13 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         ? SolarSystemManager->GetAnchorSimPos()
         : FVector::ZeroVector;
 
-    const FVector Center = Planet->GetCenterInFrame(AnchorSim); // render-frame
-    const FVector Pos = UpdatedComponent->GetComponentLocation(); // render-frame
+    const FVector Center = Planet->GetCenterInFrame(AnchorSim);
+    const FVector Pos = UpdatedComponent->GetComponentLocation();
 
     FVector ToCenter = Center - Pos;
     float Distance = ToCenter.Size();
 
-    const float Surface = Planet->GetPlanetRadiusWS(); // eller Planet->RadiusWS
+    const float Surface = Planet->GetPlanetRadiusWS();
     const float Altitude = Distance - Surface;
 
     if (Distance < KINDA_SMALL_NUMBER)
@@ -93,7 +101,7 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
     if (bGrounded)
     {
-        const float StickSpeed = 30.f; // cm/s
+        const float StickSpeed = 30.f;
 
         Velocity = FVector::VectorPlaneProject(Velocity, Up)
             - Up * StickSpeed;
@@ -155,19 +163,15 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         Velocity = TangentVel;
         ApplyVelocityBraking(DeltaTime, BrakingFriction, BrakingDecelerationWalking);
         TangentVel = Velocity;
-
-        // sätt tillbaka radial
         Velocity = TangentVel + RadialVel;
     }
 
-	// Bromsa om ingen input i luften också
     if (!bGrounded && MoveDir.IsNearlyZero())
     {
         const FVector OldVel = Velocity;
         Velocity = TangentVel;
         ApplyVelocityBraking(DeltaTime, BrakingFriction, BrakingDecelerationFlying);
         TangentVel = Velocity;
-        // sätt tillbaka radial
         Velocity = TangentVel + RadialVel;
 	}
 
@@ -202,13 +206,10 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 	bPrev += DeltaTime;
     if (IsValid(SolarSystemManager) && bPrev > 0.05)
     {
-		UE_LOG(LogTemp, Warning, TEXT("Inne i andra ankare"));
 		bPrev = 0;
         if (!bAnchoredToPlanet)
         {
-            UE_LOG(LogTemp, Warning, TEXT("Inne i falsk: %f"), Altitude);
 
-            // Gå in i ankare om vi är grounded eller väldigt nära ytan
             if (bGrounded || Altitude < AnchorEnterMargin)
             {
                 bAnchoredToPlanet = true;
@@ -222,9 +223,7 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("Inne i true: %f"), Altitude);
 
-            // Stanna kvar ankare även om grounded fladdrar / vi hoppar lite
             if (Altitude > AnchorExitMargin)
             {
                 bAnchoredToPlanet = false;

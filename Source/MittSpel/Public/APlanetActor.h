@@ -18,6 +18,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet Properties")
 	float GravityStrength = 980.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gravity")
+	float GravityRange = 50000.f; // cm
+
 	// Valfritt: låt dig override:a radie manuellt vid behov
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet Properties")
 	bool bOverridePlanetRadius = false;

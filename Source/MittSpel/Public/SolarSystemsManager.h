@@ -14,7 +14,7 @@ class MITTSPEL_API ASolarSystemManager : public AActor
 
 public:
 	UPROPERTY(EditAnywhere)
-	TArray<AAPlanetActor*> Bodies; // sol + planeter
+	TArray<AAPlanetActor*> Bodies;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Anchor")
 	AAPlanetActor* AnchorBody = nullptr;
@@ -28,6 +28,12 @@ public:
 
 	UFUNCTION(BlueprintPure)
 	FVector GetAnchorSimPos() const { return AnchorSimPos; }
+
+	UPROPERTY(BlueprintReadOnly, Category = "Gravity")
+	AAPlanetActor* ActiveGravityBody = nullptr;
+
+	UFUNCTION(BlueprintPure, Category = "Gravity")
+	AAPlanetActor* GetActiveGravityBody() const { return ActiveGravityBody; }
 
 protected:
 	virtual void Tick(float DeltaTime) override;
