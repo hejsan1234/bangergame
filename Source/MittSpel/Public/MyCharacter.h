@@ -8,11 +8,14 @@
 #include "CoreMinimal.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SceneComponent.h"
+#include "Templates/SubclassOf.h"
 
 #include "MyCharacter.generated.h"
 
+
 class AAPlanetActor;
 class UPlanetMovementComponent;
+class AMyGun;
 
 UCLASS()
 class MITTSPEL_API AMyCharacter : public ACharacter
@@ -29,6 +32,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+    
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float MoveSpeed = 2800.0f;
@@ -52,6 +56,14 @@ protected:
 	bool bIsJumping = false;
 
 	float PitchDeg = 0.f;
+    
+    UPROPERTY()
+        AMyGun* Gun = nullptr;
+    
+    UPROPERTY(EditDefaultsOnly, Category="Weapon")
+    TSubclassOf<AMyGun> GunClass;
+
+    void Fire();
 
 public:	
 	// Called every frame

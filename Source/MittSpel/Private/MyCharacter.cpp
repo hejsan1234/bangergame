@@ -8,6 +8,7 @@
 #include "PlanetMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "MyGun.h"
 
 // Sets default values
 AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
@@ -43,6 +44,9 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+    
+    UE_LOG(LogTemp, Warning, TEXT("Pawn in use: %s"), *GetClass()->GetName());
+
 
 	// Bas-inställningar för movement
 	if (UCharacterMovementComponent* MoveCompBase = GetCharacterMovement())
@@ -78,13 +82,43 @@ void AMyCharacter::BeginPlay()
 	{
 		Camera->AttachToComponent(CameraPivot, FAttachmentTransformRules::KeepRelativeTransform);
 	}
+    
+    FActorSpawnParameters SpawnParams;
+    SpawnParams.Owner = this;
+    SpawnParams.Instigator = this;
+
+    if (!GunClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("GunClass is not set on MyCharacter!"));
+        return;
+    }
+
+    Gun = GetWorld()->SpawnActor<AMyGun>(GunClass, SpawnParams);
+
+    if (Gun)
+    {
+        Gun->AttachToComponent(
+            Camera,
+            FAttachmentTransformRules::SnapToTargetNotIncludingScale
+        );
+    }
+    
+    if (!PlanetRef)
+    {
+        UE_LOG(LogTemp, Error, TEXT("PlanetRef is NOT set on MyCharacter"));
+    }
 }
 
 // Called every frame
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+    
+    if (!PlanetRef)
+        {
+            return;
+        }
+    
 	const FVector PlayerLoc = GetActorLocation();
 	const FVector PlanetLoc = PlanetRef->GetActorLocation();
 	const float Dist = FVector::Dist(PlayerLoc, PlanetLoc);
@@ -105,6 +139,13 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMyCharacter::StartJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMyCharacter::StopJump);
+    
+    PlayerInputComponent->BindAction(
+        "Fire",
+        IE_Pressed,
+        this,
+        &AMyCharacter::Fire
+    );
 
 }
 
@@ -161,4 +202,16 @@ void AMyCharacter::StartJump() {
 
 void AMyCharacter::StopJump() {
 	bIsJumping = false;
+}
+
+void AMyCharacter::Fire()
+{
+    if (!Gun || !Camera) return;
+
+    Gun->Fire(
+        Camera->GetComponentLocation(),
+        Camera->GetForwardVector()
+    );
+    
+    UE_LOG(LogTemp, Error, TEXT("Fire!!!!"));
 }
