@@ -85,9 +85,11 @@ void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	const FVector PlayerLoc = GetActorLocation();
-	const FVector PlanetLoc = PlanetRef->GetActorLocation();
-	const float Dist = FVector::Dist(PlayerLoc, PlanetLoc);
+	if (AAPlanetActor* Planet = GetCurrentPlanet())
+	{
+		const float Dist = FVector::Dist(GetActorLocation(), Planet->GetActorLocation());
+		// debug osv
+	}
 }
 
 // Called to bind functionality to input
@@ -106,6 +108,16 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMyCharacter::StartJump);
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMyCharacter::StopJump);
 
+}
+
+// Get the current planet the character is on
+
+AAPlanetActor* AMyCharacter::GetCurrentPlanet() const {
+	if (const UPlanetMovementComponent* PlanetMove = Cast<UPlanetMovementComponent>(GetCharacterMovement()))
+	{
+		return PlanetMove->Planet;
+	}
+	return nullptr;
 }
 
 // Move the character
@@ -135,9 +147,10 @@ void AMyCharacter::MoveLeft(float Value) {
 }
 
 void AMyCharacter::Turn(float Value) {
-	if (Value == 0.f || !PlanetRef) return;
+	AAPlanetActor* Planet = GetCurrentPlanet();
+	if (Value == 0.f || !Planet) return;
 
-	const FVector Up = (GetActorLocation() - PlanetRef->GetActorLocation()).GetSafeNormal();
+	const FVector Up = (GetActorLocation() - Planet->GetActorLocation()).GetSafeNormal();
 
 	// grader per sekund (justera!)
 	const float YawSpeedDegPerSec = 180.f;

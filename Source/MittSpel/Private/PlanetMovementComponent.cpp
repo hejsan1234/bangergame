@@ -32,8 +32,13 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
     if (!GravPlanet)
     {
+		PhysFree(DeltaTime, Iterations);
         return;
     }
+
+	Planet = GravPlanet;
+
+	UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Active gravity body is %s"), GravPlanet ? *GravPlanet->GetName() : TEXT("None"));
 
     if (!CharacterOwner || !UpdatedComponent || !Planet)
     {
@@ -236,6 +241,17 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
             }
         }
     }
+}
+
+void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
+{
+    FHitResult Hit;
+    SafeMoveUpdatedComponent(
+        Velocity * DeltaTime,
+        UpdatedComponent->GetComponentQuat(),
+        true,
+        Hit
+    );
 }
 
 bool UPlanetMovementComponent::CheckGrounded(

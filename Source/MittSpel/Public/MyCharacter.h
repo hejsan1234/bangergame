@@ -51,6 +51,9 @@ protected:
 	UPROPERTY(BlueprintReadWrite, Category = "Movement")
 	bool bIsJumping = false;
 
+	UFUNCTION(BlueprintCallable, Category="Planet Gravity")
+	AAPlanetActor* GetCurrentPlanet() const;
+
 	float PitchDeg = 0.f;
 
 public:	
