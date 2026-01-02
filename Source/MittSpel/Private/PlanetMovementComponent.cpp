@@ -17,78 +17,87 @@ UPlanetMovementComponent::UPlanetMovementComponent()
     PlanetGravityScale = 1.0f;
 }
 
-void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
+bool UPlanetMovementComponent::EnsureSolarSystemManager()
 {
-    if (!IsValid(SolarSystemManager))
-    {
-        SolarSystemManager = Cast<ASolarSystemManager>(
-            UGameplayStatics::GetActorOfClass(GetWorld(), ASolarSystemManager::StaticClass())
-        );
-    }
+    if (IsValid(SolarSystemManager))
+        return true;
 
-    AAPlanetActor* GravPlanet = IsValid(SolarSystemManager)
+    SolarSystemManager = Cast<ASolarSystemManager>(
+        UGameplayStatics::GetActorOfClass(GetWorld(), ASolarSystemManager::StaticClass())
+    );
+
+    return IsValid(SolarSystemManager);
+}
+
+AAPlanetActor* UPlanetMovementComponent::GetActivePlanet() const
+{
+    return IsValid(SolarSystemManager)
         ? SolarSystemManager->GetActiveGravityBody()
         : nullptr;
+}
 
+bool UPlanetMovementComponent::EnsureMovementPrereqs(float DeltaTime, int32 Iterations)
+{
+    EnsureSolarSystemManager();
+
+    AAPlanetActor* GravPlanet = GetActivePlanet();
     if (!GravPlanet)
     {
-		PhysFree(DeltaTime, Iterations);
-        return;
+        PhysFree(DeltaTime, Iterations);
+        return false;
     }
 
-	Planet = GravPlanet;
-
-	UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Active gravity body is %s"), GravPlanet ? *GravPlanet->GetName() : TEXT("None"));
+    Planet = GravPlanet;
 
     if (!CharacterOwner || !UpdatedComponent || !Planet)
     {
-		UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Missing required references, falling back to default physics."));
+        UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Missing required references, falling back to default physics."));
         PhysFalling(DeltaTime, Iterations);
-        return;
+        return false;
     }
 
-    bGrounded = false;
+    return true;
+}
 
-    AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner);
-
-    const FVector AnchorSim = IsValid(SolarSystemManager)
+bool UPlanetMovementComponent::BuildPlanetFrame(FPlanetFrame& OutFrame) const
+{
+    OutFrame.AnchorSim = IsValid(SolarSystemManager)
         ? SolarSystemManager->GetAnchorSimPos()
         : FVector::ZeroVector;
 
-    const FVector Center = Planet->GetCenterInFrame(AnchorSim);
-    const FVector Pos = UpdatedComponent->GetComponentLocation();
+    OutFrame.Center = Planet->GetCenterInFrame(OutFrame.AnchorSim);
+    OutFrame.Pos = UpdatedComponent->GetComponentLocation();
 
-    FVector ToCenter = Center - Pos;
-    float Distance = ToCenter.Size();
+    //UE_LOG(LogTemp, Warning, TEXT("POS: %s"), *OutFrame.Pos.ToString());
 
-    const float Surface = Planet->GetPlanetRadiusWS();
-    const float Altitude = Distance - Surface;
+    OutFrame.ToCenter = OutFrame.Center - OutFrame.Pos;
+    OutFrame.Distance = OutFrame.ToCenter.Size();
 
-    if (Distance < KINDA_SMALL_NUMBER)
-        return;
+    OutFrame.Surface = Planet->GetPlanetRadiusWS();
+    OutFrame.Altitude = OutFrame.Distance - OutFrame.Surface;
 
-    FVector DirToCenter = ToCenter / Distance;
-    FVector Up = -DirToCenter;
+    if (OutFrame.Distance < KINDA_SMALL_NUMBER)
+        return false;
 
+    OutFrame.DirToCenter = OutFrame.ToCenter / OutFrame.Distance;
+    OutFrame.Up = -OutFrame.DirToCenter;
+
+    return true;
+}
+
+FVector UPlanetMovementComponent::ReadMoveDirOnTangent(const FVector& Up) const
+{
     // 1) Läs input
     FVector Input = GetLastInputVector();
     Input = Input.GetClampedToMaxSize(1.0f);
 
     // 2) Projekt på tangentplanet
     FVector MoveDir = FVector::VectorPlaneProject(Input, Up);
-    MoveDir = MoveDir.GetSafeNormal();
+    return MoveDir.GetSafeNormal();
+}
 
-    const float MaxSpeed = GetMaxSpeed();
-    const float MaxAccel = GetMaxAcceleration();
-
-	const float GravityStrength = Planet->GravityStrength;
-
-    if (!bGrounded) {
-        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
-    }
-	// print out velocity for debugging
-
-    // 7) Flytta kapseln
+void UPlanetMovementComponent::MoveCapsuleAndResolveCollisions(const FVector& Up, float DeltaTime)
+{
     FVector Delta = Velocity * DeltaTime;
     FHitResult Hit;
 
@@ -99,8 +108,9 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         const float Dot = FVector::DotProduct(Hit.Normal, Up);
         if (Dot > 0.7f)
         {
-			bGrounded = true;
+            bGrounded = true;
         }
+
         SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
     }
 
@@ -111,92 +121,109 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
         Velocity = FVector::VectorPlaneProject(Velocity, Up)
             - Up * StickSpeed;
     }
+}
 
-    FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);
-
-    // 3) Acceleration från input
+FVector UPlanetMovementComponent::ComputeInputAcceleration(
+    const FVector& MoveDir,
+    const FVector& TangentVel,
+    float MaxAccel,
+    float MaxSpeed,
+    float DeltaTime
+) const
+{
     FVector Accel = FVector::ZeroVector;
-    if (!MoveDir.IsNearlyZero())
+
+    if (MoveDir.IsNearlyZero())
+        return Accel;
+
+    if (!bGrounded)
     {
-        if (!bGrounded)
+        const float AirAccelScale = 0.5f;
+        const float AirBrakeScale = 0.5f;
+
+        const float TangentSpeed = TangentVel.Size();
+
+        const bool bIsBrakingInput =
+            (TangentSpeed > KINDA_SMALL_NUMBER) &&
+            (FVector::DotProduct(MoveDir, TangentVel.GetSafeNormal()) < 0.0f);
+
+        const FVector TestVel = TangentVel + (MoveDir * MaxAccel * AirAccelScale * DeltaTime);
+        const float TestSpeed = TestVel.Size();
+
+        if (bIsBrakingInput)
         {
-            const float AirAccelScale = 0.5f;
-            const float AirBrakeScale = 0.5f;
-
-            const float TangentSpeed = TangentVel.Size();
-
-            const bool bIsBrakingInput = (TangentSpeed > KINDA_SMALL_NUMBER) && (FVector::DotProduct(MoveDir, TangentVel.GetSafeNormal()) < 0.0f);
-            const FVector TestVel = TangentVel + (MoveDir * MaxAccel * AirAccelScale * DeltaTime);
-            const float TestSpeed = TestVel.Size();
-
-            if (bIsBrakingInput)
-            {
-                Accel = MoveDir * MaxAccel * AirBrakeScale;
-            }
-            else if (TestSpeed < MaxSpeed) {
-                Accel = MoveDir * MaxAccel * AirAccelScale;
-            }
+            Accel = MoveDir * MaxAccel * AirBrakeScale;
         }
-        else {
-            Accel = MoveDir * MaxAccel;
+        else if (TestSpeed < MaxSpeed)
+        {
+            Accel = MoveDir * MaxAccel * AirAccelScale;
         }
     }
+    else
+    {
+        Accel = MoveDir * MaxAccel;
+    }
 
-    // 4) Uppdatera Velocity
-    Velocity += Accel * DeltaTime;
+    return Accel;
+}
+
+void UPlanetMovementComponent::ClampGroundTangentSpeed(const FVector& Up, float MaxSpeed)
+{
+    FVector TangentVel2 = FVector::VectorPlaneProject(Velocity, Up);
+    FVector RadialVel2 = Velocity - TangentVel2;
+
+    const float TangentSpeed = TangentVel2.Size();
+    if (TangentSpeed > MaxSpeed)
+    {
+        TangentVel2 *= (MaxSpeed / TangentSpeed);
+        Velocity = TangentVel2 + RadialVel2;
+    }
+}
+
+void UPlanetMovementComponent::ApplyNoInputBraking(
+    const FVector& MoveDir,
+    const FVector& Up,
+    float DeltaTime,
+    FVector& InOutTangentVel
+)
+{
+    // ersätter båda dina block: om ingen input, bromsa tangent-velocity men behåll radial-del
+    if (!MoveDir.IsNearlyZero())
+        return;
+
+    const FVector RadialVel = Velocity - InOutTangentVel;
+
+    Velocity = InOutTangentVel;
 
     if (bGrounded)
     {
-        FVector TangentVel2 = FVector::VectorPlaneProject(Velocity, Up);
-        FVector RadialVel2 = Velocity - TangentVel2;
-
-        const float TangentSpeed = TangentVel2.Size();
-        if (TangentSpeed > MaxSpeed)
-        {
-            TangentVel2 *= (MaxSpeed / TangentSpeed);
-            Velocity = TangentVel2 + RadialVel2;
-        }
-    }
-
-	FVector DebugVel = Velocity * DeltaTime;
-
-    // 5) Bromsa om ingen inpup
-    FVector RadialVel = Velocity - TangentVel;
-    if (bGrounded && MoveDir.IsNearlyZero())
-    {
-        const FVector OldVel = Velocity;
-        Velocity = TangentVel;
         ApplyVelocityBraking(DeltaTime, BrakingFriction, BrakingDecelerationWalking);
-        TangentVel = Velocity;
-        Velocity = TangentVel + RadialVel;
     }
-
-    if (!bGrounded && MoveDir.IsNearlyZero())
+    else
     {
-        const FVector OldVel = Velocity;
-        Velocity = TangentVel;
         ApplyVelocityBraking(DeltaTime, BrakingFriction, BrakingDecelerationFlying);
-        TangentVel = Velocity;
-        Velocity = TangentVel + RadialVel;
-	}
-
-    // 6) Clampa toppfart
-
-    if (MyChar && MyChar->IsPlanetJumping() && bGrounded)
-    {
-        float JumpHeight = CharacterOwner->GetCharacterMovement()->JumpZVelocity;
-        float JumpVelocityMagnitude = FMath::Sqrt(2 * GravityStrength * PlanetGravityScale * JumpHeight);
-        Velocity += Up * JumpVelocityMagnitude;
     }
 
-	//FVector LookDir = CharacterOwner->GetControlRotation().Vector();
+    InOutTangentVel = Velocity;
+    Velocity = InOutTangentVel + RadialVel;
+}
 
-// Ta bort grav-komponenten så vi bara får rörelse längs ytan
-    TangentVel = FVector::VectorPlaneProject(Velocity, Up);
+void UPlanetMovementComponent::TryApplyPlanetJump(const FVector& Up, float GravityStrength)
+{
+    AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner);
+    if (!MyChar || !MyChar->IsPlanetJumping() || !bGrounded)
+        return;
 
-	FVector Forward = FVector::VectorPlaneProject(GetCharacterOwner()->GetActorForwardVector(), Up).GetSafeNormal();
+    float JumpHeight = CharacterOwner->GetCharacterMovement()->JumpZVelocity;
+    float JumpVelocityMagnitude = FMath::Sqrt(2.f * GravityStrength * PlanetGravityScale * JumpHeight);
 
-    // om vi står nästan still: behåll nuvarande forward men se till att den ligger på tangentplanet
+    Velocity += Up * JumpVelocityMagnitude;
+}
+
+void UPlanetMovementComponent::AlignCharacterToSurface(const FVector& Up, float DeltaTime)
+{
+    FVector Forward = FVector::VectorPlaneProject(GetCharacterOwner()->GetActorForwardVector(), Up).GetSafeNormal();
+
     if (Forward.IsNearlyZero())
     {
         Forward = FVector::VectorPlaneProject(CharacterOwner->GetActorForwardVector(), Up).GetSafeNormal();
@@ -205,42 +232,90 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     const FRotator TargetRot = FRotationMatrix::MakeFromXZ(Forward, Up).Rotator();
     const FRotator NewRot = FMath::RInterpTo(CharacterOwner->GetActorRotation(), TargetRot, DeltaTime, 12.f);
     CharacterOwner->SetActorRotation(NewRot);
+}
 
-    //Sätt planetAnkare
-    
-	bPrev += DeltaTime;
-    if (IsValid(SolarSystemManager) && bPrev > 0.05)
+void UPlanetMovementComponent::UpdateAnchorStateMachine(float Altitude, float DeltaTime)
+{
+    bPrev += DeltaTime;
+
+    if (!IsValid(SolarSystemManager) || bPrev <= 0.05f)
+        return;
+
+    bPrev = 0.f;
+
+    if (!bAnchoredToPlanet)
     {
-		bPrev = 0;
-        if (!bAnchoredToPlanet)
+        if (bGrounded || Altitude < AnchorEnterMargin)
         {
-
-            if (bGrounded || Altitude < AnchorEnterMargin)
-            {
-                bAnchoredToPlanet = true;
-                SolarSystemManager->RequestAnchor(Planet);
-            }
-            else
-            {
-                //SolarSystemManager->SetAnchor(Planet);
-                //SolarSystemManager->ClearAnchor();
-            }
-        }
-        else
-        {
-
-            if (Altitude > AnchorExitMargin)
-            {
-                bAnchoredToPlanet = false;
-                //SolarSystemManager->SetAnchor(Planet);
-                SolarSystemManager->ClearAnchorRequest();
-            }
-            else
-            {
-                //SolarSystemManager->SetAnchor(Planet);
-            }
+            bAnchoredToPlanet = true;
+            SolarSystemManager->RequestAnchor(Planet);
         }
     }
+    else
+    {
+        if (Altitude > AnchorExitMargin)
+        {
+            bAnchoredToPlanet = false;
+            SolarSystemManager->ClearAnchorRequest();
+        }
+    }
+}
+
+
+void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
+{
+    if (!EnsureMovementPrereqs(DeltaTime, Iterations))
+        return;
+
+    bGrounded = false;
+
+    AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner);
+
+    FPlanetFrame Frame;
+    if (!BuildPlanetFrame(Frame))
+        return;
+
+	const FVector& DirToCenter = Frame.DirToCenter;
+	const FVector& Up = Frame.Up;
+	const float Altitude = Frame.Altitude;
+
+    FHitResult GroundHit;
+    bool bOnGround = CheckGrounded(Up, 1.f, GroundHit);
+	UE_LOG(LogTemp, Warning, TEXT("bOnGround: %s"), bOnGround ? TEXT("true") : TEXT("false"));
+
+    FVector MoveDir = ReadMoveDirOnTangent(Up);
+
+    //Gravitation
+    const float MaxSpeed = GetMaxSpeed();
+    const float MaxAccel = GetMaxAcceleration();
+
+	const float GravityStrength = Planet->GravityStrength;
+
+    if (!bGrounded) {
+        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
+    };
+
+    MoveCapsuleAndResolveCollisions(Up, DeltaTime);
+
+    FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);
+
+    const FVector Accel = ComputeInputAcceleration(MoveDir, TangentVel, MaxAccel, MaxSpeed, DeltaTime);
+    Velocity += Accel * DeltaTime;
+
+    if (bGrounded)
+    {
+        ClampGroundTangentSpeed(Up, MaxSpeed);
+    }
+
+    TangentVel = FVector::VectorPlaneProject(Velocity, Up);
+
+    ApplyNoInputBraking(MoveDir, Up, DeltaTime, TangentVel);
+
+    TryApplyPlanetJump(Up, GravityStrength);
+
+    AlignCharacterToSurface(Up, DeltaTime);
+
+    UpdateAnchorStateMachine(Altitude, DeltaTime);
 }
 
 void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
@@ -260,36 +335,29 @@ bool UPlanetMovementComponent::CheckGrounded(
     FHitResult& OutHit
 )
 {
-    if (!CharacterOwner)
-        return false;
+    if (!CharacterOwner || !UpdatedComponent) return false;
 
     UCapsuleComponent* Capsule = CharacterOwner->GetCapsuleComponent();
-    if (!Capsule)
-        return false;
+    if (!Capsule) return false;
 
     const float HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
-    const FVector Start = UpdatedComponent->GetComponentLocation() - Up * (HalfHeight - 1.f);
-    const FVector End = Start - Up * ProbeDistance;
+    const float Radius = Capsule->GetScaledCapsuleRadius();
+
+    const float StartOffset = 35.f; // testa 1,2,5
+    const FVector Start = UpdatedComponent->GetComponentLocation() - Up * (HalfHeight - StartOffset);
+    const FVector End = Start - Up * 10.f;
 
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(CharacterOwner);
 
-    bool bHit = GetWorld()->SweepSingleByChannel(
-        OutHit,
-        Start,
-        End,
-        FQuat::Identity,
-        ECC_WorldStatic,
-        FCollisionShape::MakeCapsule(
-            Capsule->GetScaledCapsuleRadius(),
-            Capsule->GetScaledCapsuleHalfHeight()
-        ),
-        Params
-    );
 
-    if (!bHit)
-        return false;
+    // Kanske lägg minska från radius till 2.f
+    const FCollisionShape Shape = FCollisionShape::MakeCapsule(Radius, 1.f);
 
-    const float Dot = FVector::DotProduct(OutHit.Normal, Up);
-    return Dot > 0.7f;
+    const FQuat Rot = UpdatedComponent->GetComponentQuat();
+
+    const bool bHit = GetWorld()->SweepSingleByChannel(OutHit, Start, End, Rot, ECC_WorldStatic, Shape, Params);
+    if (!bHit) return false;
+
+    return FVector::DotProduct(OutHit.Normal, Up) > 0.7f && OutHit.Distance < 4.f;
 }

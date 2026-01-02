@@ -44,4 +44,52 @@ private:
 	float bPrev = 0;
 	float AnchorEnterMargin = 5000.f;
 	float AnchorExitMargin = 5000.f;
+
+	bool EnsureSolarSystemManager();
+	AAPlanetActor* GetActivePlanet() const;
+	bool EnsureMovementPrereqs(float DeltaTime, int32 Iterations);
+
+	struct FPlanetFrame
+	{
+		FVector AnchorSim = FVector::ZeroVector;
+		FVector Center = FVector::ZeroVector;
+		FVector Pos = FVector::ZeroVector;
+
+		FVector ToCenter = FVector::ZeroVector;
+		float Distance = 0.f;
+
+		float Surface = 0.f;
+		float Altitude = 0.f;
+
+		FVector DirToCenter = FVector::ZeroVector;
+		FVector Up = FVector::UpVector;
+	};
+
+	bool BuildPlanetFrame(FPlanetFrame& OutFrame) const;
+
+	FVector ReadMoveDirOnTangent(const FVector& Up) const;
+
+	void MoveCapsuleAndResolveCollisions(const FVector& Up, float DeltaTime);
+
+	FVector ComputeInputAcceleration(
+		const FVector& MoveDir,
+		const FVector& TangentVel,
+		float MaxAccel,
+		float MaxSpeed,
+		float DeltaTime
+	) const;
+
+	void ClampGroundTangentSpeed(const FVector& Up, float MaxSpeed);
+
+	void ApplyNoInputBraking(
+		const FVector& MoveDir,
+		const FVector& Up,
+		float DeltaTime,
+		FVector& InOutTangentVel
+	);
+
+	void TryApplyPlanetJump(const FVector& Up, float GravityStrength);
+	void AlignCharacterToSurface(const FVector& Up, float DeltaTime);
+
+	void UpdateAnchorStateMachine(float Altitude, float DeltaTime);
 };
