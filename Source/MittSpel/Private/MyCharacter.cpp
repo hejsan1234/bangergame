@@ -122,6 +122,8 @@ AAPlanetActor* AMyCharacter::GetCurrentPlanet() const {
 
 // Move the character
 
+
+//TODO: SÄTT IHOP TILL EN FUNKTION FÖR FRAMÅT/BACKÅT OCH EN FÖR HÖGER/VÄNSTER
 void AMyCharacter::MoveForward(float Value) {
 	if (Value != 0.0f) {
 		AddMovementInput(GetActorForwardVector(), Value);

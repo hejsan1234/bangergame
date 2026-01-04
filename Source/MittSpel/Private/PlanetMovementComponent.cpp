@@ -96,7 +96,7 @@ FVector UPlanetMovementComponent::ReadMoveDirOnTangent(const FVector& Up) const
     return MoveDir.GetSafeNormal();
 }
 
-void UPlanetMovementComponent::MoveCapsuleAndResolveCollisions(const FVector& Up, float DeltaTime)
+void UPlanetMovementComponent::MoveCapsuleAndResolveCollisions(const FVector& Up, float DeltaTime, FHitResult GroundHit, FPlanetFrame Frame)
 {
     FVector Delta = Velocity * DeltaTime;
     FHitResult Hit;
@@ -108,18 +108,40 @@ void UPlanetMovementComponent::MoveCapsuleAndResolveCollisions(const FVector& Up
         const float Dot = FVector::DotProduct(Hit.Normal, Up);
         if (Dot > 0.7f)
         {
-            bGrounded = true;
         }
 
         SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
     }
 
-    if (bGrounded)
+    if (bGrounded && JumpGroundIgnoreTime <= 0.f)
     {
-        const float StickSpeed = 30.f;
+        const FVector N = GroundHit.Normal.GetSafeNormal();
 
-        Velocity = FVector::VectorPlaneProject(Velocity, Up)
-            - Up * StickSpeed;
+        // 1) Ta bort all vel in/ut från marken
+        Velocity = FVector::VectorPlaneProject(Velocity, N);
+
+        // 2) Snap om vi är ovanför
+        const float DesiredGap = 2.f;
+
+        //VID BUGG KAN BYTA TILL DETTA DÅ DET KANSKE ÄR MER EXAKT
+  //      const float Dist = FVector::DotProduct(UpdatedComponent->GetComponentLocation() - GroundHit.Location, N);
+		//UE_LOG(LogTemp, Warning, TEXT("Dist to ground: %f"), Dist);
+
+		const float Dist = GroundHit.Distance;
+
+        const float Error = Dist - DesiredGap;
+
+        if (Error > 0.f)
+        {
+            FHitResult SnapHit;
+            SafeMoveUpdatedComponent(-N * Error, UpdatedComponent->GetComponentQuat(), true, SnapHit);
+        }
+    }
+    else {
+		// Apply gravity when not grounded
+        const FVector& DirToCenter = Frame.DirToCenter;
+        const float GravityStrength = Planet->GravityStrength;
+        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
     }
 }
 
@@ -136,16 +158,15 @@ FVector UPlanetMovementComponent::ComputeInputAcceleration(
     if (MoveDir.IsNearlyZero())
         return Accel;
 
+    const float TangentSpeed = TangentVel.Size();
+    const bool bIsBrakingInput =
+        (TangentSpeed > KINDA_SMALL_NUMBER) &&
+        (FVector::DotProduct(MoveDir, TangentVel.GetSafeNormal()) < 0.0f);
+
     if (!bGrounded)
     {
-        const float AirAccelScale = 0.5f;
-        const float AirBrakeScale = 0.5f;
-
-        const float TangentSpeed = TangentVel.Size();
-
-        const bool bIsBrakingInput =
-            (TangentSpeed > KINDA_SMALL_NUMBER) &&
-            (FVector::DotProduct(MoveDir, TangentVel.GetSafeNormal()) < 0.0f);
+        const float AirAccelScale = 0.2f;
+        const float AirBrakeScale = 0.2f;
 
         const FVector TestVel = TangentVel + (MoveDir * MaxAccel * AirAccelScale * DeltaTime);
         const float TestSpeed = TestVel.Size();
@@ -161,7 +182,13 @@ FVector UPlanetMovementComponent::ComputeInputAcceleration(
     }
     else
     {
-        Accel = MoveDir * MaxAccel;
+        if (bIsBrakingInput)
+        {
+            Accel = MoveDir * MaxAccel * 2;
+        }
+        else {
+            Accel = MoveDir * MaxAccel;
+        }
     }
 
     return Accel;
@@ -198,6 +225,11 @@ void UPlanetMovementComponent::ApplyNoInputBraking(
     if (bGrounded)
     {
         ApplyVelocityBraking(DeltaTime, BrakingFriction, BrakingDecelerationWalking);
+        const float StopSpeed = 2.f;
+        if (Velocity.SizeSquared() < FMath::Square(StopSpeed))
+        {
+            Velocity = FVector::ZeroVector;
+        }
     }
     else
     {
@@ -218,6 +250,7 @@ void UPlanetMovementComponent::TryApplyPlanetJump(const FVector& Up, float Gravi
     float JumpVelocityMagnitude = FMath::Sqrt(2.f * GravityStrength * PlanetGravityScale * JumpHeight);
 
     Velocity += Up * JumpVelocityMagnitude;
+	JumpGroundIgnoreTime = 0.12f;
 }
 
 void UPlanetMovementComponent::AlignCharacterToSurface(const FVector& Up, float DeltaTime)
@@ -267,7 +300,12 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     if (!EnsureMovementPrereqs(DeltaTime, Iterations))
         return;
 
-    bGrounded = false;
+    //bGrounded = false;
+
+    const FVector Pos = UpdatedComponent->GetComponentLocation();
+
+    //UE_LOG(LogTemp, Warning, TEXT("Character position: %s"), *Pos.ToString());
+    //UE_LOG(LogTemp, Warning, TEXT("bGrounded: %d"), bGrounded);
 
     AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner);
 
@@ -279,9 +317,18 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 	const FVector& Up = Frame.Up;
 	const float Altitude = Frame.Altitude;
 
+    JumpGroundIgnoreTime = FMath::Max(0.f, JumpGroundIgnoreTime - DeltaTime);
+
     FHitResult GroundHit;
-    bool bOnGround = CheckGrounded(Up, 1.f, GroundHit);
-	UE_LOG(LogTemp, Warning, TEXT("bOnGround: %s"), bOnGround ? TEXT("true") : TEXT("false"));
+
+    if (JumpGroundIgnoreTime > 0.f)
+    {
+        bGrounded = false;
+    }
+    else {
+        bGrounded = CheckGrounded(Up, 1.f, GroundHit);
+    }
+	//UE_LOG(LogTemp, Warning, TEXT("bOnGround: %s"), bOnGround ? TEXT("true") : TEXT("false"));
 
     FVector MoveDir = ReadMoveDirOnTangent(Up);
 
@@ -291,11 +338,7 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
 	const float GravityStrength = Planet->GravityStrength;
 
-    if (!bGrounded) {
-        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
-    };
-
-    MoveCapsuleAndResolveCollisions(Up, DeltaTime);
+    MoveCapsuleAndResolveCollisions(Up, DeltaTime, GroundHit, Frame);
 
     FVector TangentVel = FVector::VectorPlaneProject(Velocity, Up);
 
@@ -310,6 +353,7 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     TangentVel = FVector::VectorPlaneProject(Velocity, Up);
 
     ApplyNoInputBraking(MoveDir, Up, DeltaTime, TangentVel);
+    //UE_LOG(LogTemp, Warning, TEXT("Velocity efter ApplyNoInputBraking: %f"), Velocity.Size());
 
     TryApplyPlanetJump(Up, GravityStrength);
 

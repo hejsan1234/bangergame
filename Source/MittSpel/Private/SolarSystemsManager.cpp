@@ -42,7 +42,7 @@ void ASolarSystemManager::Tick(float DeltaTime)
         if (DistSq <= RangeSq && DistSq < BestDistSq)
         {
             BestDistSq = DistSq;
-			UE_LOG(LogTemp, Warning, TEXT("SolarSystemManager: Body %s is within gravity range (dist sq: %f, range sq: %f)"), *Body->GetName(), DistSq, RangeSq);
+			//UE_LOG(LogTemp, Warning, TEXT("SolarSystemManager: Body %s is within gravity range (dist sq: %f, range sq: %f)"), *Body->GetName(), DistSq, RangeSq);
             Best = Body;
         }
     }

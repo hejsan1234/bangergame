@@ -41,6 +41,7 @@ protected:
 
 private:
 	bool bAnchoredToPlanet = false;
+	float JumpGroundIgnoreTime = 0.f;
 	float bPrev = 0;
 	float AnchorEnterMargin = 5000.f;
 	float AnchorExitMargin = 5000.f;
@@ -69,7 +70,7 @@ private:
 
 	FVector ReadMoveDirOnTangent(const FVector& Up) const;
 
-	void MoveCapsuleAndResolveCollisions(const FVector& Up, float DeltaTime);
+	void MoveCapsuleAndResolveCollisions(const FVector& Up, float DeltaTime, FHitResult GroundHit, FPlanetFrame Frame);
 
 	FVector ComputeInputAcceleration(
 		const FVector& MoveDir,
