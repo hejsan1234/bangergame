@@ -35,6 +35,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Gravity")
 	AAPlanetActor* GetActiveGravityBody() const { return ActiveGravityBody; }
 
+	UPROPERTY(EditAnywhere, Category = "World Shift")
+	AActor* SkySphereActor = nullptr;
+
 protected:
 	virtual void Tick(float DeltaTime) override;
 

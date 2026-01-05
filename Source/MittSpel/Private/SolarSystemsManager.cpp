@@ -64,6 +64,11 @@ void ASolarSystemManager::Tick(float DeltaTime)
             {
                 C->AddActorWorldOffset(Shift, false, nullptr, ETeleportType::TeleportPhysics);
             }
+
+            if (IsValid(SkySphereActor))
+            {
+                SkySphereActor->AddActorWorldOffset(Shift, false, nullptr, ETeleportType::TeleportPhysics);
+            }
         }
     }
 
