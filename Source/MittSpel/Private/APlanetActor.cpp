@@ -20,6 +20,19 @@ void AAPlanetActor::BeginPlay()
 
 	SimPos = GetActorLocation();
 
+	if (ParentBody)
+	{
+		// Använd var du lagt planeten i leveln för att bestämma radien
+		OrbitRadius = FVector::Dist(GetActorLocation(), ParentBody->GetActorLocation());
+
+		// (valfritt) beräkna också PhaseDeg så den startar exakt där du lagt den
+		const FVector Offset = GetActorLocation() - ParentBody->GetActorLocation();
+		OrbitAngleDeg = FMath::RadiansToDegrees(FMath::Atan2(Offset.Y, Offset.X));
+
+		UE_LOG(LogTemp, Warning, TEXT("=== PLANET ==="));
+		UE_LOG(LogTemp, Warning, TEXT("Planet %s initialized. Orbit radius: %f, PhaseDeg: %f"), *GetName(), OrbitRadius, PhaseDeg);
+	}
+
 	if (bEnableOrbit && ParentBody)
 	{
 		UpdateOrbit(0.f);

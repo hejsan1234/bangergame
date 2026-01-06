@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "SolarSystemsManager.h"
 #include <Kismet/GameplayStatics.h>
 #include "GameFramework/Character.h"
-#include "SolarSystemsManager.h"
 
 ASolarSystemManager::ASolarSystemManager()
 {

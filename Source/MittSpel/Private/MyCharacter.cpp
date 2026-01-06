@@ -16,7 +16,7 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	MoveSpeed = 600.0f;
+	MoveSpeed = 12600.0f;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -30,12 +30,14 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	Camera->bUsePawnControlRotation = false;
 
 	// valfritt: placera kameran
-	Camera->SetRelativeLocation(FVector(0.f, 0.f, 100.f));
+	Camera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
 
 	if (auto* Move = GetCharacterMovement())
 	{
 		Move->bOrientRotationToMovement = false;
 		Move->bUseControllerDesiredRotation = false;
+		Move->MaxCustomMovementSpeed = MoveSpeed;
+		Move->BrakingDecelerationWalking = 4048.f;
 	}
 }
 
@@ -43,6 +45,9 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	UE_LOG(LogTemp, Warning, TEXT("=== CHARACTER ==="));
+	UE_LOG(LogTemp, Warning, TEXT("Spawned pawn class: %s"), *GetClass()->GetName());
 
 	// Bas-inställningar för movement
 	if (UCharacterMovementComponent* MoveCompBase = GetCharacterMovement())
@@ -60,7 +65,7 @@ void AMyCharacter::BeginPlay()
 	GetWorldTimerManager().SetTimerForNextTick([this]()
 		{
 			if (!PlanetRef) return;
-
+			
 			const FTransform SpawnTM = PlanetRef->GetSpawnTransform();
 			TeleportTo(SpawnTM.GetLocation(), SpawnTM.Rotator(), false, true);
 
