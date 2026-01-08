@@ -80,6 +80,7 @@ bool UPlanetMovementComponent::BuildPlanetFrame(FPlanetFrame& OutFrame) const
         return false;
 
     OutFrame.DirToCenter = OutFrame.ToCenter / OutFrame.Distance;
+
     OutFrame.Up = -OutFrame.DirToCenter;
 
     return true;
@@ -184,7 +185,7 @@ FVector UPlanetMovementComponent::ComputeInputAcceleration(
     {
         if (bIsBrakingInput)
         {
-            Accel = MoveDir * MaxAccel * 2;
+            Accel = MoveDir * MaxAccel * 3;
         }
         else {
             Accel = MoveDir * MaxAccel;
@@ -317,6 +318,13 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 	const FVector& Up = Frame.Up;
 	const float Altitude = Frame.Altitude;
 
+    UpdateAnchorStateMachine(Altitude, DeltaTime);
+
+    //if (!bAnchoredToPlanet) {
+    //    PhysFree(DeltaTime, Iterations);
+    //    return;
+    //}
+
     JumpGroundIgnoreTime = FMath::Max(0.f, JumpGroundIgnoreTime - DeltaTime);
 
     FHitResult GroundHit;
@@ -358,8 +366,6 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     TryApplyPlanetJump(Up, GravityStrength);
 
     AlignCharacterToSurface(Up, DeltaTime);
-
-    UpdateAnchorStateMachine(Altitude, DeltaTime);
 }
 
 void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)

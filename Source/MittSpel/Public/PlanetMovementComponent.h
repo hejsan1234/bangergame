@@ -33,6 +33,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
 	ASolarSystemManager* SolarSystemManager = nullptr;
 
+
 protected:
 	virtual void PhysCustom(float deltaTime, int32 Iterations) override;
 	virtual void PhysFree(float deltaTime, int32 Iterations);

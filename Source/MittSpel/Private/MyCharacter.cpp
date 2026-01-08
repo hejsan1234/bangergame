@@ -16,7 +16,7 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	MoveSpeed = 12600.0f;
+	MoveSpeed = 1600.0f;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -37,7 +37,8 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 		Move->bOrientRotationToMovement = false;
 		Move->bUseControllerDesiredRotation = false;
 		Move->MaxCustomMovementSpeed = MoveSpeed;
-		Move->BrakingDecelerationWalking = 4048.f;
+		Move->BrakingDecelerationWalking = 6048.f;
+		Move->MaxAcceleration = 5048.f;
 	}
 }
 
