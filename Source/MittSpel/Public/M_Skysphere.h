@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "APlanetActor.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "M_Skysphere.generated.h"
@@ -15,6 +16,9 @@ public:
 	// Sets default values for this actor's properties
 	AM_Skysphere();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Planet")
+	AAPlanetActor* ActiveBody = nullptr;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -25,4 +29,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sky")
 	UStaticMeshComponent* SphereMesh;
+
+	void SetActiveBody(AAPlanetActor* NewActiveBody);
 };

@@ -5,6 +5,8 @@
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "SolarSystemsManager.h"
 // Sets default values
 AM_Skysphere::AM_Skysphere()
 {
@@ -24,13 +26,18 @@ AM_Skysphere::AM_Skysphere()
 void AM_Skysphere::BeginPlay()
 {
 	Super::BeginPlay();
-	
 }
 
 // Called every frame
 void AM_Skysphere::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	//SphereMesh->AddLocalRotation(
+	//	FRotator(0.f, 0.5f * DeltaTime, 0.f)
+	//);
+
+	//UE_LOG(LogTemp, Warning, TEXT("Skysphere Tick: ActiveBody = %s"), ActiveBody ? *ActiveBody->GetName() : TEXT("None"));
 
 	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{
@@ -40,5 +47,9 @@ void AM_Skysphere::Tick(float DeltaTime)
 			//SetActorLocation(Cam->GetCameraLocation());
 		}
 	}
+}
+
+void AM_Skysphere::SetActiveBody(AAPlanetActor* NewActiveBody) {
+	ActiveBody = NewActiveBody;
 }
 

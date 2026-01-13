@@ -7,6 +7,8 @@
 #include "APlanetActor.h"
 #include "SolarSystemsManager.generated.h"
 
+class AM_Skysphere;
+
 UCLASS()
 class MITTSPEL_API ASolarSystemManager : public AActor
 {
@@ -36,7 +38,7 @@ public:
 	AAPlanetActor* GetActiveGravityBody() const { return ActiveGravityBody; }
 
 	UPROPERTY(EditAnywhere, Category = "World Shift")
-	AActor* SkySphereActor = nullptr;
+	AM_Skysphere* SkySphereActor = nullptr;
 
 protected:
 	virtual void Tick(float DeltaTime) override;

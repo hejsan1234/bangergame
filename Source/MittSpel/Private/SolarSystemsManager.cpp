@@ -2,11 +2,12 @@
 
 #include "SolarSystemsManager.h"
 #include <Kismet/GameplayStatics.h>
+#include "M_Skysphere.h"
 #include "GameFramework/Character.h"
 
 ASolarSystemManager::ASolarSystemManager()
 {
-	PrimaryActorTick.bCanEverTick = true;
+    PrimaryActorTick.bCanEverTick = true;
 }
 
 void ASolarSystemManager::Tick(float DeltaTime)
@@ -16,6 +17,9 @@ void ASolarSystemManager::Tick(float DeltaTime)
     if (AnchorBody != RequestedAnchorBody)
     {
         AnchorBody = RequestedAnchorBody;
+        if (IsValid(SkySphereActor)) {
+            SkySphereActor->SetActiveBody(AnchorBody);
+        }
     }
 
     // Uppdatera simpos
