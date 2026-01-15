@@ -33,9 +33,15 @@ void AM_Skysphere::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//SphereMesh->AddLocalRotation(
-	//	FRotator(0.f, 0.5f * DeltaTime, 0.f)
-	//);
+	OrbitAngleDeg = FMath::Fmod(OrbitAngleDeg + OrbitSpeedDegPerSec * DeltaTime, 360.f);
+
+	const FVector Axis = OrbitAxis.GetSafeNormal();
+	const FQuat Q(Axis, FMath::DegreesToRadians(-OrbitAngleDeg));
+
+	// Rotera mesh lokalt så stjärnorna snurrar "med orbit"
+	SphereMesh->SetRelativeRotation(Q);
+
+	//SphereMesh->AddLocalRotation(FRotator(0.f, 0.f, 1.f * DeltaTime));
 
 	//UE_LOG(LogTemp, Warning, TEXT("Skysphere Tick: ActiveBody = %s"), ActiveBody ? *ActiveBody->GetName() : TEXT("None"));
 

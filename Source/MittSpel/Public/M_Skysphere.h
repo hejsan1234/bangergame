@@ -31,4 +31,13 @@ public:
 	UStaticMeshComponent* SphereMesh;
 
 	void SetActiveBody(AAPlanetActor* NewActiveBody);
+
+	UPROPERTY(EditAnywhere, Category = "Sky")
+	float OrbitAngleDeg = 0.f;
+
+	UPROPERTY(EditAnywhere, Category = "Sky")
+	float OrbitSpeedDegPerSec = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = "Sky")
+	FVector OrbitAxis = FVector(0.f, 0.f, 1.f);
 };
