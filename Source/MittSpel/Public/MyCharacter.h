@@ -34,7 +34,7 @@ protected:
 	float MoveSpeed = 4600.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float JumpHeight = 9000.0f;
+	float JumpHeight = 12000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float Sensitivity = 0.5f;

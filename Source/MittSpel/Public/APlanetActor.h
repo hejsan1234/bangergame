@@ -60,6 +60,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
 	bool bEnableOrbit = false;
 
+	// Spinning properties
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spin")
+	float SpinSpeedDegPerSec = 10.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spin")
+	float SpinAngleDeg = 0.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spin")
+	FQuat SimRot = FQuat::Identity;
+
+	UFUNCTION(BlueprintCallable, Category = "Spin")
+	void UpdateSpin(float DeltaTime);
+
 	// Spawn
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spawn")
 	USceneComponent* SpawnPoint;

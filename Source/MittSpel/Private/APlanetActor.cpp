@@ -22,16 +22,19 @@ void AAPlanetActor::BeginPlay()
 
 	if (ParentBody)
 	{
-		// Använd var du lagt planeten i leveln för att bestämma radien
 		OrbitRadius = FVector::Dist(GetActorLocation(), ParentBody->GetActorLocation());
 
-		// (valfritt) beräkna också PhaseDeg så den startar exakt där du lagt den
 		const FVector Offset = GetActorLocation() - ParentBody->GetActorLocation();
 		OrbitAngleDeg = FMath::RadiansToDegrees(FMath::Atan2(Offset.Y, Offset.X));
 
 		UE_LOG(LogTemp, Warning, TEXT("=== PLANET ==="));
 		UE_LOG(LogTemp, Warning, TEXT("Planet %s initialized. Orbit radius: %f, PhaseDeg: %f"), *GetName(), OrbitRadius, PhaseDeg);
 	}
+
+	SimRot = FQuat(
+		FVector::UpVector,
+		FMath::DegreesToRadians(SpinAngleDeg)
+	);
 
 	if (bEnableOrbit && ParentBody)
 	{
@@ -48,7 +51,7 @@ float AAPlanetActor::GetPlanetRadiusWS() const
 	if (!PlanetMesh)
 		return PlanetRadius;
 
-	return PlanetMesh->Bounds.SphereRadius; // world space, scale inräknad
+	return PlanetMesh->Bounds.SphereRadius;
 }
 
 FVector AAPlanetActor::GetGravityDirection(const FVector& Location) const
@@ -83,6 +86,16 @@ void AAPlanetActor::UpdateOrbit(float DeltaTime)
 	{
 		SimPos = ParentBody->SimPos + LocalOffset;
 	}
+}
+
+void AAPlanetActor::UpdateSpin(float DeltaTime)
+{
+	SpinAngleDeg = FMath::Fmod(SpinAngleDeg + SpinSpeedDegPerSec * DeltaTime, 360.f);
+
+	SimRot = FQuat(
+		FVector::UpVector,
+		FMath::DegreesToRadians(SpinAngleDeg)
+	);
 }
 
 

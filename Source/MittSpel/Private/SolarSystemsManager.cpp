@@ -39,7 +39,7 @@ void ASolarSystemManager::Tick(float DeltaTime)
     {
         if (!Body) continue;
 
-        const FVector Center = Body->GetCenterInFrame(AnchorSimPos); // render-frame
+        const FVector Center = Body->GetCenterInFrame(AnchorSimPos);
         const float DistSq = FVector::DistSquared(PlayerPos, Center);
 
         const float Range = Body->GravityRange;
@@ -83,9 +83,12 @@ void ASolarSystemManager::Tick(float DeltaTime)
     {
         if (!Body) continue;
         Body->SetActorLocation(Body->SimPos - AnchorSimPos);
+
+		if (Body == AnchorBody) continue;
+        Body->UpdateSpin(DeltaTime);
+		Body->SetActorRotation(Body->SimRot);
     }
 }
-
 
 
 void ASolarSystemManager::RequestAnchor(AAPlanetActor* Body)
