@@ -47,5 +47,7 @@ private:
 	FVector AnchorSimPos = FVector::ZeroVector;
 	FVector PrevAnchorSimPos = FVector::ZeroVector;
 	AAPlanetActor* PrevAnchorBody = nullptr;
+	float PrevSpin = 0.f;
+	float PrevOrbit = 0.f;
 };
 

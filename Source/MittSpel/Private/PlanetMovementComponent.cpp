@@ -256,16 +256,35 @@ void UPlanetMovementComponent::TryApplyPlanetJump(const FVector& Up, float Gravi
 
 void UPlanetMovementComponent::AlignCharacterToSurface(const FVector& Up, float DeltaTime)
 {
-    FVector Forward = FVector::VectorPlaneProject(GetCharacterOwner()->GetActorForwardVector(), Up).GetSafeNormal();
+    const FVector UpN = Up.GetSafeNormal();
+
+    FVector Forward = FVector::VectorPlaneProject(
+        CharacterOwner->GetActorForwardVector(),
+        UpN
+    );
 
     if (Forward.IsNearlyZero())
     {
-        Forward = FVector::VectorPlaneProject(CharacterOwner->GetActorForwardVector(), Up).GetSafeNormal();
+        Forward = FVector::VectorPlaneProject(
+            CharacterOwner->GetActorForwardVector(),
+            UpN
+        );
     }
 
-    const FRotator TargetRot = FRotationMatrix::MakeFromXZ(Forward, Up).Rotator();
-    const FRotator NewRot = FMath::RInterpTo(CharacterOwner->GetActorRotation(), TargetRot, DeltaTime, 12.f);
-    CharacterOwner->SetActorRotation(NewRot);
+    Forward = Forward.GetSafeNormal();
+
+    const FQuat TargetQuat =
+        FRotationMatrix::MakeFromXZ(Forward, UpN).ToQuat();
+
+    const FQuat CurrentQuat = CharacterOwner->GetActorQuat();
+
+    const float Speed = 12.f;
+    const float Alpha = FMath::Clamp(Speed * DeltaTime, 0.f, 1.f);
+
+    const FQuat NewQuat =
+        FQuat::Slerp(CurrentQuat, TargetQuat, Alpha).GetNormalized();
+
+    CharacterOwner->SetActorRotation(NewQuat);
 }
 
 void UPlanetMovementComponent::UpdateAnchorStateMachine(float Altitude, float DeltaTime)

@@ -70,6 +70,7 @@ void AAPlanetActor::Tick(float DeltaTime)
 
 void AAPlanetActor::UpdateOrbit(float DeltaTime)
 {
+
 	OrbitAngleDeg = FMath::Fmod(
 		OrbitAngleDeg + OrbitSpeedDegPerSec * DeltaTime,
 		360.f

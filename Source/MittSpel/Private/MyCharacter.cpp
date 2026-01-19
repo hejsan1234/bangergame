@@ -37,8 +37,8 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 		Move->bOrientRotationToMovement = false;
 		Move->bUseControllerDesiredRotation = false;
 		Move->MaxCustomMovementSpeed = MoveSpeed;
-		Move->BrakingDecelerationWalking = 6048.f;
-		Move->MaxAcceleration = 5048.f;
+		Move->BrakingDecelerationWalking = 7048.f;
+		Move->MaxAcceleration = 6048.f;
 	}
 }
 

@@ -38,6 +38,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sky")
 	float OrbitSpeedDegPerSec = 2.f;
 
+	UFUNCTION(BlueprintCallable, Category = "Sky")
+	void SetOrbitSpeedDegPerSec(float NewOrbitSpeed) { OrbitSpeedDegPerSec = NewOrbitSpeed; }
+
 	UPROPERTY(EditAnywhere, Category = "Sky")
 	FVector OrbitAxis = FVector(0.f, 0.f, 1.f);
 };

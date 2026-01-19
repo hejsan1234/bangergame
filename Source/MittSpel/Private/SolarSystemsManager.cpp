@@ -56,10 +56,31 @@ void ASolarSystemManager::Tick(float DeltaTime)
     ActiveGravityBody = Best;
 
     const bool bAnchorChanged = (PrevAnchorBody != AnchorBody);
-    PrevAnchorBody = AnchorBody;
 
     if (bAnchorChanged)
     {
+        if (PrevAnchorBody != nullptr)
+        {
+            PrevAnchorBody->SetSpinSpeedDegPerSec(PrevSpin);
+            PrevAnchorBody->SetOrbitSpeedDegPerSec(PrevOrbit);
+        }
+
+        if (AnchorBody != nullptr)
+        {
+            float AnchorSpinDeg = AnchorBody->GetSpinDegPerSec();
+            float AnchorOrbitSpeedDeg = AnchorBody->GetOrbitSpeedDegPerSec();
+
+			PrevSpin = AnchorSpinDeg;
+			PrevOrbit = AnchorOrbitSpeedDeg;
+
+            AnchorBody->SetSpinSpeedDegPerSec(0.f);
+            AnchorBody->SetOrbitSpeedDegPerSec(AnchorSpinDeg - AnchorOrbitSpeedDeg);
+            SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg / 4);
+		}
+        else {
+            SkySphereActor->SetOrbitSpeedDegPerSec(0.f);
+        }
+
         const FVector Shift = OldAnchorSimPos - AnchorSimPos;
 
         if (!Shift.IsNearlyZero())
@@ -78,13 +99,17 @@ void ASolarSystemManager::Tick(float DeltaTime)
         }
     }
 
+    PrevAnchorBody = AnchorBody;
+
     // Rendera bodies i ankarets frame (kan fortfarande uppdateras varje tick)
     for (AAPlanetActor* Body : Bodies)
     {
         if (!Body) continue;
         Body->SetActorLocation(Body->SimPos - AnchorSimPos);
 
-		if (Body == AnchorBody) continue;
+        if (Body == AnchorBody) {
+            continue;
+        }
         Body->UpdateSpin(DeltaTime);
 		Body->SetActorRotation(Body->SimRot);
     }

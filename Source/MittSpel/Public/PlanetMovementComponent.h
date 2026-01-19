@@ -94,4 +94,8 @@ private:
 	void AlignCharacterToSurface(const FVector& Up, float DeltaTime);
 
 	void UpdateAnchorStateMachine(float Altitude, float DeltaTime);
+
+	FVector PrevUp = FVector::UpVector;
+	FVector PrevFwd = FVector::ForwardVector;
+	bool bHasFrame = false;
 };

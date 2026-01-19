@@ -51,6 +51,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
 	float OrbitSpeedDegPerSec = 5.f;
 
+	UFUNCTION(BluePrintCallable, Category = "Orbit")
+	float GetOrbitSpeedDegPerSec() const { return OrbitSpeedDegPerSec; }
+
+	UFUNCTION(BluePrintCallable, Category = "Orbit")
+	void SetOrbitSpeedDegPerSec(float NewOrbitSpeed) { OrbitSpeedDegPerSec = NewOrbitSpeed; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
 	FVector OrbitAxis = FVector::UpVector;
 
@@ -64,6 +70,12 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spin")
 	float SpinSpeedDegPerSec = 10.f;
+
+	UFUNCTION(BluePrintCallable, Category = "spin")
+	float GetSpinDegPerSec() const { return SpinSpeedDegPerSec; }
+
+	UFUNCTION(BluePrintCallable, Category = "spin")
+	void SetSpinSpeedDegPerSec(float NewSpinSpeed) { SpinSpeedDegPerSec = NewSpinSpeed; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spin")
 	float SpinAngleDeg = 0.f;
