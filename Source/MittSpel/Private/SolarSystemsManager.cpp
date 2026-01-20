@@ -61,21 +61,40 @@ void ASolarSystemManager::Tick(float DeltaTime)
     {
         if (PrevAnchorBody != nullptr)
         {
-            PrevAnchorBody->SetSpinSpeedDegPerSec(PrevSpin);
-            PrevAnchorBody->SetOrbitSpeedDegPerSec(PrevOrbit);
+            if (!PrevAnchorBody->isMoon) {
+                PrevAnchorBody->SetSpinSpeedDegPerSec(PrevSpin);
+                PrevAnchorBody->SetOrbitSpeedDegPerSec(PrevOrbit);
+            }
+            else {
+                PrevAnchorBody->ParentBody->SetSpinSpeedDegPerSec(PrevSpin);
+                PrevAnchorBody->ParentBody->SetOrbitSpeedDegPerSec(PrevOrbit);
+            }
         }
 
         if (AnchorBody != nullptr)
         {
-            float AnchorSpinDeg = AnchorBody->GetSpinDegPerSec();
-            float AnchorOrbitSpeedDeg = AnchorBody->GetOrbitSpeedDegPerSec();
+            if (!AnchorBody->isMoon) {
+                float AnchorSpinDeg = AnchorBody->GetSpinDegPerSec();
+                float AnchorOrbitSpeedDeg = AnchorBody->GetOrbitSpeedDegPerSec();
 
-			PrevSpin = AnchorSpinDeg;
-			PrevOrbit = AnchorOrbitSpeedDeg;
+                PrevSpin = AnchorSpinDeg;
+                PrevOrbit = AnchorOrbitSpeedDeg;
 
-            AnchorBody->SetSpinSpeedDegPerSec(0.f);
-            AnchorBody->SetOrbitSpeedDegPerSec(AnchorSpinDeg - AnchorOrbitSpeedDeg);
-            SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg / 4);
+                AnchorBody->SetSpinSpeedDegPerSec(0.f);
+                AnchorBody->SetOrbitSpeedDegPerSec(AnchorSpinDeg - AnchorOrbitSpeedDeg);
+                SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg/4);
+            }
+            else {
+                float AnchorSpinDeg = AnchorBody->ParentBody->GetSpinDegPerSec();
+                float AnchorOrbitSpeedDeg = AnchorBody->ParentBody->GetOrbitSpeedDegPerSec();
+
+                PrevSpin = AnchorSpinDeg;
+                PrevOrbit = AnchorOrbitSpeedDeg;
+
+                AnchorBody->ParentBody->SetSpinSpeedDegPerSec(0.f);
+                AnchorBody->ParentBody->SetOrbitSpeedDegPerSec(AnchorSpinDeg - AnchorOrbitSpeedDeg);
+                SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg / 4);
+            }
 		}
         else {
             SkySphereActor->SetOrbitSpeedDegPerSec(0.f);

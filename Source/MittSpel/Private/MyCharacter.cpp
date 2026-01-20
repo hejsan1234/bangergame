@@ -13,9 +13,9 @@
 AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UPlanetMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	MoveSpeed = 1600.0f;
 
 	bUseControllerRotationPitch = false;
@@ -50,31 +50,26 @@ void AMyCharacter::BeginPlay()
 	UE_LOG(LogTemp, Warning, TEXT("=== CHARACTER ==="));
 	UE_LOG(LogTemp, Warning, TEXT("Spawned pawn class: %s"), *GetClass()->GetName());
 
-	// Bas-inställningar för movement
 	if (UCharacterMovementComponent* MoveCompBase = GetCharacterMovement())
 	{
 		MoveCompBase->MaxWalkSpeed = MoveSpeed;
 		MoveCompBase->JumpZVelocity = JumpHeight;
 
-		// Vi använder custom fysik, så vanlig -Z-gravity ska inte styra
 		MoveCompBase->GravityScale = 0.0f;
 
-		// Viktigt: sätt custom movement mode så PhysCustom() kallas
 		MoveCompBase->SetMovementMode(MOVE_Custom);
 	}
 
 	GetWorldTimerManager().SetTimerForNextTick([this]()
 		{
 			if (!PlanetRef) return;
-			
+
 			const FTransform SpawnTM = PlanetRef->GetSpawnTransform();
 			TeleportTo(SpawnTM.GetLocation(), SpawnTM.Rotator(), false, true);
 
 			UE_LOG(LogTemp, Warning, TEXT("Initial teleport done via next tick"));
-	});
+		});
 
-
-	// Koppla planeten till vår custom movement component
 	if (UPlanetMovementComponent* PlanetMove = Cast<UPlanetMovementComponent>(GetCharacterMovement()))
 	{
 		PlanetMove->Planet = PlanetRef;
@@ -86,7 +81,6 @@ void AMyCharacter::BeginPlay()
 	}
 }
 
-// Called every frame
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -98,7 +92,6 @@ void AMyCharacter::Tick(float DeltaTime)
 	}
 }
 
-// Called to bind functionality to input
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -116,8 +109,6 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 }
 
-// Get the current planet the character is on
-
 AAPlanetActor* AMyCharacter::GetCurrentPlanet() const {
 	if (const UPlanetMovementComponent* PlanetMove = Cast<UPlanetMovementComponent>(GetCharacterMovement()))
 	{
@@ -126,10 +117,7 @@ AAPlanetActor* AMyCharacter::GetCurrentPlanet() const {
 	return nullptr;
 }
 
-// Move the character
 
-
-//TODO: SÄTT IHOP TILL EN FUNKTION FÖR FRAMÅT/BACKÅT OCH EN FÖR HÖGER/VÄNSTER
 void AMyCharacter::MoveForward(float Value) {
 	if (Value != 0.0f) {
 		AddMovementInput(GetActorForwardVector(), Value);
@@ -160,7 +148,6 @@ void AMyCharacter::Turn(float Value) {
 
 	const FVector Up = (GetActorLocation() - Planet->GetActorLocation()).GetSafeNormal();
 
-	// grader per sekund (justera!)
 	const float YawSpeedDegPerSec = 180.f;
 
 	const float DeltaYawRad = FMath::DegreesToRadians(YawSpeedDegPerSec * Value * GetWorld()->GetDeltaSeconds());
@@ -172,7 +159,7 @@ void AMyCharacter::Turn(float Value) {
 void AMyCharacter::LookUp(float Value) {
 	if (Value == 0.f) return;
 
-	PitchDeg = FMath::Clamp(PitchDeg + Value * Sensitivity*2, -85.f, 85.f);
+	PitchDeg = FMath::Clamp(PitchDeg + Value * Sensitivity * 2, -85.f, 85.f);
 	CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
 }
 

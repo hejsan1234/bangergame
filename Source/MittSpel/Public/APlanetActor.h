@@ -66,6 +66,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
 	bool bEnableOrbit = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
+	bool isMoon = false;
+
 	// Spinning properties
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spin")

@@ -98,4 +98,5 @@ private:
 	FVector PrevUp = FVector::UpVector;
 	FVector PrevFwd = FVector::ForwardVector;
 	bool bHasFrame = false;
+	int FrameAnchoredCount = 0;
 };

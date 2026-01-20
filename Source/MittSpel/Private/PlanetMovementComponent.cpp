@@ -39,13 +39,14 @@ AAPlanetActor* UPlanetMovementComponent::GetActivePlanet() const
 bool UPlanetMovementComponent::EnsureMovementPrereqs(float DeltaTime, int32 Iterations)
 {
     EnsureSolarSystemManager();
-
+    AMyCharacter* Mychar = Cast<AMyCharacter>(CharacterOwner);
     AAPlanetActor* GravPlanet = GetActivePlanet();
-    if (!GravPlanet)
-    {
-        PhysFree(DeltaTime, Iterations);
-        return false;
-    }
+    //if (!GravPlanet)
+    //{
+    //    if (Mychar) Mychar->SetControlMode(EControlMode::Space);
+    //    PhysFree(DeltaTime, Iterations);
+    //    return false;
+    //}
 
     Planet = GravPlanet;
 
@@ -340,8 +341,12 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     UpdateAnchorStateMachine(Altitude, DeltaTime);
 
     //if (!bAnchoredToPlanet) {
+    //    if (MyChar) MyChar->SetControlMode(EControlMode::Space);
     //    PhysFree(DeltaTime, Iterations);
     //    return;
+    //}
+    //else {
+    //    if (MyChar) MyChar->SetControlMode(EControlMode::Planet);
     //}
 
     JumpGroundIgnoreTime = FMath::Max(0.f, JumpGroundIgnoreTime - DeltaTime);
@@ -389,13 +394,44 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
 void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
 {
-    FHitResult Hit;
-    SafeMoveUpdatedComponent(
-        Velocity * DeltaTime,
-        UpdatedComponent->GetComponentQuat(),
-        true,
-        Hit
-    );
+    //const FVector Input = GetLastInputVector().GetClampedToMaxSize(1.f);
+
+    //FQuat Q = UpdatedComponent->GetComponentQuat();
+    //if (AMyCharacter* MyChar = Cast<AMyCharacter>(CharacterOwner))
+    //{
+    //    if (MyChar->IsSpaceMode() && MyChar->GetCameraComponent())
+    //        Q = MyChar->GetCameraComponent()->GetComponentQuat();
+    //}
+
+    //const FVector Forward = Q.GetForwardVector();
+    //const FVector Right = Q.GetRightVector();
+    //const FVector Up = Q.GetUpVector();
+
+    //FVector MoveDir = Input.X * Forward + Input.Y * Right + Input.Z * Up;
+    //MoveDir = MoveDir.GetClampedToMaxSize(1.f);
+
+
+    //const float MaxSpeed = GetMaxSpeed() * 1000;
+    //const float MaxAccel = GetMaxAcceleration();
+
+    //const FVector Accel = ComputeInputAcceleration(MoveDir, Velocity, MaxAccel, MaxSpeed, DeltaTime);
+    //Velocity += Accel * DeltaTime;
+
+    //const float Speed = Velocity.Size();
+    //if (Speed > MaxSpeed)
+    //    Velocity *= (MaxSpeed / Speed);
+
+    //FHitResult Hit;
+    //const FVector Delta = Velocity * DeltaTime;
+    //SafeMoveUpdatedComponent(Delta, UpdatedComponent->GetComponentQuat(), true, Hit);
+
+    //if (Hit.IsValidBlockingHit())
+    //{
+    //    SlideAlongSurface(Delta, 1.f - Hit.Time, Hit.Normal, Hit, true);
+    //    Velocity = FVector::VectorPlaneProject(Velocity, Hit.Normal);
+    //}
+
+    //UE_LOG(LogTemp, Warning, TEXT("Free speed: %f"), Velocity.Size());
 }
 
 bool UPlanetMovementComponent::CheckGrounded(
