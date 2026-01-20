@@ -2,17 +2,21 @@
 
 #pragma once
 
-#include "UObject/ObjectMacros.h"
-#include "UObject/Object.h"
-#include "GameFramework/Character.h"
 #include "CoreMinimal.h"
-#include "Camera/CameraComponent.h"
-#include "Components/SceneComponent.h"
-
+#include "GameFramework/Character.h"
 #include "MyCharacter.generated.h"
 
 class AAPlanetActor;
 class UPlanetMovementComponent;
+class UCameraComponent;
+class USceneComponent;
+
+UENUM()
+enum class EControlMode : uint8
+{
+	Planet,
+	Space
+};
 
 UCLASS()
 class MITTSPEL_API AMyCharacter : public ACharacter
@@ -20,14 +24,23 @@ class MITTSPEL_API AMyCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	AMyCharacter(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintCallable)
 	bool IsPlanetJumping() const { return bIsJumping; }
 
+	UPROPERTY(BlueprintReadOnly)
+	EControlMode ControlMode = EControlMode::Planet;
+
+	UFUNCTION(BlueprintCallable)
+	void SetControlMode(EControlMode NewMode);
+
+	bool IsSpaceMode() const { return ControlMode == EControlMode::Space; }
+
+	UCameraComponent* GetCameraComponent() const { return Camera; }
+	USceneComponent* GetCameraPivot() const { return CameraPivot; }
+
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
@@ -54,21 +67,26 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Planet Gravity")
 	AAPlanetActor* GetCurrentPlanet() const;
 
+	// Planet-mode pitch (din gamla)
 	float PitchDeg = 0.f;
 
-public:
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	// Space camera state (den här versionen använder quat + SpaceUp)
+	FQuat CameraOrientation = FQuat::Identity;
+	FVector SpaceUp = FVector::UpVector;
 
-	// Called to bind functionality to input
+public:
+	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void MoveForward(float Value);
 	void MoveBackward(float Value);
 	void MoveRight(float Value);
 	void MoveLeft(float Value);
+	void MoveUp(float Value);
+
 	void Turn(float Value);
 	void LookUp(float Value);
+
 	void StartJump();
 	void StopJump();
 };
