@@ -120,11 +120,8 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	PlayerInputComponent->BindAxis("MoveForward", this, &AMyCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("MoveBackward", this, &AMyCharacter::MoveBackward);
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMyCharacter::MoveRight);
-	PlayerInputComponent->BindAxis("MoveLeft", this, &AMyCharacter::MoveLeft);
 	PlayerInputComponent->BindAxis("MoveUp", this, &AMyCharacter::MoveUp);
-	PlayerInputComponent->BindAxis("MoveDown", this, &AMyCharacter::MoveUp);
 
 	PlayerInputComponent->BindAxis("Turn", this, &AMyCharacter::Turn);
 	PlayerInputComponent->BindAxis("LookUp", this, &AMyCharacter::LookUp);
@@ -136,32 +133,41 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 // Movement input
 void AMyCharacter::MoveForward(float Value)
 {
-	if (Value != 0.0f)
-		AddMovementInput(GetActorForwardVector(), Value);
-}
+	if (Value == 0.0f) return;
 
-void AMyCharacter::MoveBackward(float Value)
-{
-	if (Value != 0.0f)
+	if (IsSpaceMode())
+	{
+		const FVector Fwd = CameraOrientation.GetForwardVector().GetSafeNormal();
+		AddMovementInput(Fwd, Value);
+	}
+	else
+	{
 		AddMovementInput(GetActorForwardVector(), Value);
+	}
 }
 
 void AMyCharacter::MoveRight(float Value)
 {
-	if (Value != 0.0f)
-		AddMovementInput(GetActorRightVector(), Value);
-}
+	if (Value == 0.f) return;
 
-void AMyCharacter::MoveLeft(float Value)
-{
-	if (Value != 0.0f)
+	if (IsSpaceMode())
+	{
+		const FVector Right = CameraOrientation.GetRightVector().GetSafeNormal();
+		AddMovementInput(Right, Value);
+	}
+	else
+	{
 		AddMovementInput(GetActorRightVector(), Value);
+	}
 }
 
 void AMyCharacter::MoveUp(float Value)
 {
-	if (IsSpaceMode() && Value != 0.0f)
-		AddMovementInput(GetActorUpVector(), Value);
+	if (Value == 0.f) return;
+	if (!IsSpaceMode()) return;
+
+	const FVector Up = CameraOrientation.GetUpVector().GetSafeNormal();
+	AddMovementInput(Up, Value);
 }
 
 void AMyCharacter::Turn(float Value)
@@ -228,6 +234,9 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 	if (ControlMode == NewMode) return;
 	ControlMode = NewMode;
 
+	UE_LOG(LogTemp, Warning, TEXT("Switched to control mode: %s"), 
+		(ControlMode == EControlMode::Space) ? TEXT("Space") : TEXT("Planet"));
+
 	// vi kör manuellt i båda, så håll av
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
@@ -237,7 +246,7 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 	{
 		if (Camera)
 			CameraOrientation = Camera->GetComponentQuat();
-		SpaceUp = FVector::UpVector;
+		SpaceUp = GetActorUpVector().GetSafeNormal();
 	}
 	else
 	{
