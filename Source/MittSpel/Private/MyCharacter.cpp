@@ -234,8 +234,8 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 	if (ControlMode == NewMode) return;
 	ControlMode = NewMode;
 
-	UE_LOG(LogTemp, Warning, TEXT("Switched to control mode: %s"), 
-		(ControlMode == EControlMode::Space) ? TEXT("Space") : TEXT("Planet"));
+	//UE_LOG(LogTemp, Warning, TEXT("Switched to control mode: %s"), 
+	//	(ControlMode == EControlMode::Space) ? TEXT("Space") : TEXT("Planet"));
 
 	// vi kör manuellt i båda, så håll av
 	bUseControllerRotationYaw = false;
@@ -253,5 +253,11 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 		PitchDeg = 0.f;
 		if (CameraPivot)
 			CameraPivot->SetRelativeRotation(FRotator::ZeroRotator);
+
+		if (Camera)
+		{
+			// Viktigt: nolla kamerans lokala rotation så den följer pivot/actor igen
+			Camera->SetRelativeRotation(FRotator::ZeroRotator);
+		}
 	}
 }

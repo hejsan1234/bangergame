@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "DrawDebugHelpers.h"
 #include "MyCharacter.h"
 
 // Add this as a member variable in your UPlanetMovementComponent class (in the header file, e.g., PlanetMovementComponent.h):
@@ -44,7 +45,9 @@ bool UPlanetMovementComponent::EnsureMovementPrereqs(float DeltaTime, int32 Iter
     AAPlanetActor* GravPlanet = GetActivePlanet();
     if (!GravPlanet)
     {
-        if (Mychar) Mychar->SetControlMode(EControlMode::Space);
+        //if (Mychar) Mychar->SetControlMode(EControlMode::Space);
+        //UE_LOG(LogTemp, Warning, TEXT("SPELAR INTE ÅINGA DU FÅR ÅTERKOMMA SEN"));
+
         PhysFree(DeltaTime, Iterations);
         return false;
     }
@@ -53,7 +56,7 @@ bool UPlanetMovementComponent::EnsureMovementPrereqs(float DeltaTime, int32 Iter
 
     if (!CharacterOwner || !UpdatedComponent || !Planet)
     {
-        UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Missing required references, falling back to default physics."));
+        //UE_LOG(LogTemp, Warning, TEXT("PlanetMovementComponent: Missing required references, falling back to default physics."));
         PhysFalling(DeltaTime, Iterations);
         return false;
     }
@@ -339,15 +342,28 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 	const FVector& Up = Frame.Up;
 	const float Altitude = Frame.Altitude;
 
+    //if (UWorld* W = GetWorld())
+    //{
+    //    DrawCharacterDebug(W, CharacterOwner, Frame.Up, Frame.Center);
+    //}
+
     UpdateAnchorStateMachine(Altitude, DeltaTime);
+
+    const bool bJustEnteredPlanet = (!bWasAnchoredToPlanet && bAnchoredToPlanet);
+    bWasAnchoredToPlanet = bAnchoredToPlanet;
 
     if (!bAnchoredToPlanet) {
         if (MyChar) MyChar->SetControlMode(EControlMode::Space);
+		UE_LOG(LogTemp, Warning, TEXT("PhysCustom: Free mode (not anchored)"));
         PhysFree(DeltaTime, Iterations);
         return;
     }
     else {
         if (MyChar) MyChar->SetControlMode(EControlMode::Planet);
+        if (bJustEnteredPlanet)
+        {
+            OnEnterPlanet(Frame, DeltaTime);
+        }
     }
 
     JumpGroundIgnoreTime = FMath::Max(0.f, JumpGroundIgnoreTime - DeltaTime);
@@ -453,3 +469,77 @@ bool UPlanetMovementComponent::CheckGrounded(
 
     return FVector::DotProduct(OutHit.Normal, Up) > 0.7f && OutHit.Distance < 4.f;
 }
+
+void UPlanetMovementComponent::OnEnterPlanet(const FPlanetFrame& Frame, float DeltaTime)
+{
+    const FVector Up = Frame.Up.GetSafeNormal();
+
+    // 1) Preferred forward: velocity om vi har, annars actor forward
+    const FVector Preferred = (Velocity.SizeSquared() > 25.f)
+        ? Velocity.GetSafeNormal()
+        : CharacterOwner->GetActorForwardVector();
+
+	FVector Forward;
+    FVector F = FVector::VectorPlaneProject(Preferred, Up);
+    if (!F.IsNearlyZero()) {
+        Forward = F.GetSafeNormal();
+    } 
+    else {
+        // fallback: använd en global axel som inte är parallell med Up
+        const FVector Ref = (FMath::Abs(Up.Z) < 0.9f) ? FVector::UpVector : FVector::ForwardVector;
+        F = FVector::CrossProduct(Ref, Up);
+        Forward = F.GetSafeNormal();
+    }
+
+
+    // 2) Bygg target rotation
+    const FQuat Target = FRotationMatrix::MakeFromXZ(Forward, Up).ToQuat();
+
+    // 3) Sätt på UpdatedComponent så sweeps använder rätt direkt
+    MoveUpdatedComponent(FVector::ZeroVector, Target, false);
+}
+
+
+//void UPlanetMovementComponent::DrawCharacterDebug(
+//    UWorld* World,
+//    ACharacter* Char,
+//    const FVector& FrameUp,
+//    const FVector& FrameCenter
+//)
+//{
+//    if (!World || !Char) return;
+//
+//    UCapsuleComponent* Cap = Char->GetCapsuleComponent();
+//    if (!Cap) return;
+//
+//    const FVector Loc = Cap->GetComponentLocation();
+//    const FQuat   Q = Cap->GetComponentQuat();
+//
+//    const float HalfH = Cap->GetScaledCapsuleHalfHeight();
+//    const float Rad = Cap->GetScaledCapsuleRadius();
+//
+//    const float Life = 0.05f; // ritas varje tick => kort livstid
+//    const float AxLen = 120.f;
+//
+//    // 1) Kapseln (använder kapselns rotation)
+//    DrawDebugCapsule(World, Loc, HalfH, Rad, Q, FColor::White, false, Life, 0, 1.5f);
+//
+//    // 2) Axlar från kapseln (R,G,B)
+//    const FVector Up = Q.GetUpVector();
+//    const FVector Fwd = Q.GetForwardVector();
+//    const FVector Right = Q.GetRightVector();
+//
+//    DrawDebugLine(World, Loc, Loc + Fwd * AxLen, FColor::Red, false, Life, 0, 2.f);
+//    DrawDebugLine(World, Loc, Loc + Right * AxLen, FColor::Green, false, Life, 0, 2.f);
+//    DrawDebugLine(World, Loc, Loc + Up * AxLen, FColor::Blue, false, Life, 0, 2.f);
+//
+//    // 3) Planet-frame Up (cyan) + linje till planetcenter (magenta)
+//    DrawDebugLine(World, Loc, Loc + FrameUp.GetSafeNormal() * AxLen, FColor::Cyan, false, Life, 0, 3.f);
+//    DrawDebugLine(World, Loc, FrameCenter, FColor::Magenta, false, Life, 0, 1.5f);
+//
+//    // 4) Dot-debug: text i världen
+//    const float DotUp = FVector::DotProduct(Up.GetSafeNormal(), FrameUp.GetSafeNormal());
+//    DrawDebugString(World, Loc + Up * (HalfH + 25.f),
+//        FString::Printf(TEXT("dot(CapsUp, FrameUp)=%.3f"), DotUp),
+//        nullptr, FColor::Yellow, Life, false);
+//}

@@ -40,6 +40,13 @@ protected:
 
 	bool CheckGrounded(const FVector& Up, float ProbeDistance, FHitResult& OutHit);
 
+	//static void DrawCharacterDebug(
+	//	UWorld* World,
+	//	ACharacter* Char,
+	//	const FVector& FrameUp,
+	//	const FVector& FrameCenter
+	//);
+
 private:
 	bool bAnchoredToPlanet = false;
 	float JumpGroundIgnoreTime = 0.f;
@@ -95,8 +102,11 @@ private:
 
 	void UpdateAnchorStateMachine(float Altitude, float DeltaTime);
 
+	void OnEnterPlanet(const FPlanetFrame& Frame, float DeltaTime);
+
 	FVector PrevUp = FVector::UpVector;
 	FVector PrevFwd = FVector::ForwardVector;
 	bool bHasFrame = false;
 	int FrameAnchoredCount = 0;
+	bool bWasAnchoredToPlanet = false;
 };
