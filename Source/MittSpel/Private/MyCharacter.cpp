@@ -5,11 +5,11 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "DrawDebugHelpers.h"
 
 #include "PlanetMovementComponent.h"
 #include "APlanetActor.h"
 
-// Sets default values
 AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UPlanetMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
@@ -29,6 +29,8 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	Camera->bUsePawnControlRotation = false;
 
 	Camera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
+
+	PendingLookDirWorld = FVector::ForwardVector;
 
 	if (auto* Move = GetCharacterMovement())
 	{
@@ -86,33 +88,114 @@ void AMyCharacter::Tick(float DeltaTime)
 
 	if (IsSpaceMode())
 	{
-		// 1) Behåll kamerans forward (från input-uppdaterad quat)
 		const FVector Forward = CameraOrientation.GetForwardVector().GetSafeNormal();
-
-		// 2) Försök låta SpaceUp följa kamerans up
 		FVector DesiredUp = CameraOrientation.GetUpVector().GetSafeNormal();
 
-		// 3) Skydd nära polen (Forward ~ Up) => bygg en stabil Up från en referens
 		if (FMath::Abs(FVector::DotProduct(Forward, DesiredUp)) > 0.98f)
 		{
-			const FVector Ref = (FMath::Abs(Forward.Z) < 0.9f)
-				? FVector::UpVector
-				: FVector::ForwardVector;
-
+			const FVector Ref = (FMath::Abs(Forward.Z) < 0.9f) ? FVector::UpVector : FVector::ForwardVector;
 			const FVector Right = FVector::CrossProduct(Ref, Forward).GetSafeNormal();
 			DesiredUp = FVector::CrossProduct(Forward, Right).GetSafeNormal();
 		}
 
-		// 4) Uppdatera SpaceUp varje tick
 		SpaceUp = DesiredUp;
 
-		// 5) Rebuild orientation från Forward + SpaceUp (detta “nollar roll” enligt SpaceUp)
 		const FRotator R = FRotationMatrix::MakeFromXZ(Forward, SpaceUp).Rotator();
 		CameraOrientation = R.Quaternion();
 
-		// 6) Applicera på kameran
-		Camera->SetWorldRotation(CameraOrientation);
+		if (Camera)
+		{
+			Camera->SetWorldRotation(CameraOrientation);
+		}
 	}
+
+	// 1) HOLD: lås kameran i exakt space-world-rotation
+	if (!IsSpaceMode() && bHoldSpaceCamInPlanet && Camera)
+	{
+		Camera->SetWorldRotation(HoldSpaceCamWorld);
+
+		if (HoldCamTicks > 0)
+		{
+			HoldCamTicks--;
+			return; // viktigt: gör inget mer denna frame
+		}
+
+		// Hold klar -> starta BLEND
+		bHoldSpaceCamInPlanet = false;
+
+		// Vi behöver en stabil Up
+		const FVector Up = GetActorUpVector().GetSafeNormal();
+		const FVector Fwd = PendingLookDirWorld.GetSafeNormal();
+
+		FVector PlanarFwd = FVector::VectorPlaneProject(Fwd, Up).GetSafeNormal();
+		if (PlanarFwd.IsNearlyZero())
+		{
+			const FVector Ref = (FMath::Abs(Up.Z) < 0.9f) ? FVector::UpVector : FVector::ForwardVector;
+			PlanarFwd = FVector::CrossProduct(Up, Ref).GetSafeNormal();
+		}
+
+		// Actor target
+		PendingActorTargetQuat = FRotationMatrix::MakeFromXZ(PlanarFwd, Up).ToQuat();
+
+		// Pitch target
+		const float Sin = FVector::DotProduct(Fwd, Up);
+		const float Cos = FVector::DotProduct(Fwd, PlanarFwd);
+		const float PitchRad = FMath::Atan2(Sin, Cos);
+		PendingPlanetPitchDeg = FMath::Clamp(FMath::RadiansToDegrees(PitchRad), -85.f, 85.f);
+
+		// Bygg planet target camera world quat genom att temporärt sätta actor+pivot
+		const FQuat SavedActor = GetActorQuat();
+		const float SavedPitch = PitchDeg;
+
+		SetActorRotation(PendingActorTargetQuat);
+		PitchDeg = PendingPlanetPitchDeg;
+		if (CameraPivot) CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
+		Camera->SetRelativeRotation(FRotator::ZeroRotator);
+		Camera->UpdateComponentToWorld();
+
+		BlendTargetCamWorld = Camera->GetComponentQuat();
+
+		// Återställ direkt (vi vill inte att det ska hoppa nu)
+		SetActorRotation(SavedActor);
+		PitchDeg = SavedPitch;
+		if (CameraPivot) CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
+		Camera->SetWorldRotation(HoldSpaceCamWorld);
+
+		// Starta blend
+		bBlendToPlanetCam = true;
+		BlendTime = 0.f;
+		BlendDuration = 0.7f;          // gör 1.2f om du vill långsammare
+		BlendStartCamWorld = HoldSpaceCamWorld;
+
+		return;
+	}
+
+	// 2) BLEND: crossfade kamerans world rotation till planet-target
+	if (!IsSpaceMode() && bBlendToPlanetCam && Camera)
+	{
+		BlendTime += DeltaTime;
+		const float A = FMath::Clamp(BlendTime / BlendDuration, 0.f, 1.f);
+		const float S = A * A * (3.f - 2.f * A); // smoothstep
+
+		const FQuat Q = FQuat::Slerp(BlendStartCamWorld, BlendTargetCamWorld, S).GetNormalized();
+		Camera->SetWorldRotation(Q);
+
+		if (A >= 1.f)
+		{
+			bBlendToPlanetCam = false;
+
+			// COMMIT: sätt actor+pivot så att planet-systemet matchar exakt där kameran nu är
+			SetActorRotation(PendingActorTargetQuat);
+			PitchDeg = PendingPlanetPitchDeg;
+			if (CameraPivot) CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
+
+			// nu kan vi gå tillbaka till relative
+			Camera->SetRelativeRotation(FRotator::ZeroRotator);
+		}
+
+		return;
+	}
+
 }
 
 void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -130,7 +213,6 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMyCharacter::StopJump);
 }
 
-// Movement input
 void AMyCharacter::MoveForward(float Value)
 {
 	if (Value == 0.0f) return;
@@ -163,16 +245,30 @@ void AMyCharacter::MoveRight(float Value)
 
 void AMyCharacter::MoveUp(float Value)
 {
-	if (Value == 0.f) return;
-	if (!IsSpaceMode()) return;
+	auto* Move = GetCharacterMovement();
+	if (Value == 0.f) {
+		if (Move)
+		{
+			Move->MaxCustomMovementSpeed = 1600.f;
+		}
+		return;
+	}
 
-	const FVector Up = CameraOrientation.GetUpVector().GetSafeNormal();
-	AddMovementInput(Up, Value);
+	if (!IsSpaceMode()) {
+		if (Value > 0.1f)
+			Move->MaxCustomMovementSpeed = 15000.f;
+	}
+	else {
+		const FVector Up = CameraOrientation.GetUpVector().GetSafeNormal();
+		AddMovementInput(Up, Value);
+	}
 }
 
 void AMyCharacter::Turn(float Value)
 {
 	if (Value == 0.f) return;
+
+	if (bHoldSpaceCamInPlanet || bBlendToPlanetCam) return;
 
 	if (!IsSpaceMode())
 	{
@@ -202,10 +298,15 @@ void AMyCharacter::LookUp(float Value)
 {
 	if (Value == 0.f) return;
 
+	if (bHoldSpaceCamInPlanet || bBlendToPlanetCam) return;
+
 	if (!IsSpaceMode())
 	{
 		PitchDeg = FMath::Clamp(PitchDeg + Value * Sensitivity * 2, -85.f, 85.f);
-		CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
+		if (CameraPivot)
+		{
+			CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
+		}
 	}
 	else
 	{
@@ -232,32 +333,42 @@ void AMyCharacter::StopJump()
 void AMyCharacter::SetControlMode(EControlMode NewMode)
 {
 	if (ControlMode == NewMode) return;
+
+	const EControlMode OldMode = ControlMode;
 	ControlMode = NewMode;
 
-	//UE_LOG(LogTemp, Warning, TEXT("Switched to control mode: %s"), 
-	//	(ControlMode == EControlMode::Space) ? TEXT("Space") : TEXT("Planet"));
-
-	// vi kör manuellt i båda, så håll av
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
-	if (ControlMode == EControlMode::Space)
+	if (NewMode == EControlMode::Space)
 	{
-		if (Camera)
-			CameraOrientation = Camera->GetComponentQuat();
-		SpaceUp = GetActorUpVector().GetSafeNormal();
-	}
-	else
-	{
-		PitchDeg = 0.f;
-		if (CameraPivot)
-			CameraPivot->SetRelativeRotation(FRotator::ZeroRotator);
-
 		if (Camera)
 		{
-			// Viktigt: nolla kamerans lokala rotation så den följer pivot/actor igen
-			Camera->SetRelativeRotation(FRotator::ZeroRotator);
+			CameraOrientation = Camera->GetComponentQuat();
+		}
+		SpaceUp = GetActorUpVector().GetSafeNormal();
+
+		if (auto* Move = GetCharacterMovement())
+		{
+			Move->BrakingDecelerationWalking = 17048.f;
+			Move->MaxAcceleration = 16048.f;
+		}
+
+		return;
+	}
+
+	if (OldMode == EControlMode::Space && NewMode == EControlMode::Planet)
+	{
+		PendingLookDirWorld = CameraOrientation.GetForwardVector().GetSafeNormal();
+
+		HoldSpaceCamWorld = CameraOrientation;
+		bHoldSpaceCamInPlanet = true;
+		HoldCamTicks = 3;
+		if (auto* Move = GetCharacterMovement())
+		{
+			Move->BrakingDecelerationWalking = 7048.f;
+			Move->MaxAcceleration = 6048.f;
 		}
 	}
 }

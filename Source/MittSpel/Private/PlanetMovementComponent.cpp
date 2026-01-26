@@ -354,7 +354,6 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
     if (!bAnchoredToPlanet) {
         if (MyChar) MyChar->SetControlMode(EControlMode::Space);
-		UE_LOG(LogTemp, Warning, TEXT("PhysCustom: Free mode (not anchored)"));
         PhysFree(DeltaTime, Iterations);
         return;
     }

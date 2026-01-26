@@ -47,7 +47,7 @@ protected:
 	float MoveSpeed = 600.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float JumpHeight = 12000.0f;
+	float JumpHeight = 1200.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float Sensitivity = 0.5f;
@@ -67,21 +67,33 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Planet Gravity")
 	AAPlanetActor* GetCurrentPlanet() const;
 
-	// Planet-mode pitch (din gamla)
 	float PitchDeg = 0.f;
 
-	// Space camera state (den här versionen använder quat + SpaceUp)
 	FQuat CameraOrientation = FQuat::Identity;
 	FVector SpaceUp = FVector::UpVector;
+
+	FVector PendingLookDirWorld = FVector::ForwardVector;
+
+	bool bHoldSpaceCamInPlanet = false;
+	int32 HoldCamTicks = 0;
+	FQuat HoldSpaceCamWorld = FQuat::Identity;
+
+	bool  bBlendToPlanetCam = false;
+	float BlendTime = 0.f;
+	float BlendDuration = 0.7f;
+
+	FQuat BlendStartCamWorld = FQuat::Identity;
+	FQuat BlendTargetCamWorld = FQuat::Identity;
+
+	FQuat PendingActorTargetQuat = FQuat::Identity;
+	float PendingPlanetPitchDeg = 0.f;
 
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void MoveForward(float Value);
-	void MoveBackward(float Value);
 	void MoveRight(float Value);
-	void MoveLeft(float Value);
 	void MoveUp(float Value);
 
 	void Turn(float Value);
