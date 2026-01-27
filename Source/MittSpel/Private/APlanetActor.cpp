@@ -41,6 +41,8 @@ void AAPlanetActor::BeginPlay()
 		UpdateOrbit(0.f);
 	}
 	UpdateSpawnPoint();
+
+	OrgOrbitSpeedDeg = OrbitSpeedDegPerSec;
 }
 
 float AAPlanetActor::GetPlanetRadiusWS() const
@@ -86,6 +88,17 @@ void AAPlanetActor::UpdateOrbit(float DeltaTime)
 	if (ParentBody)
 	{
 		SimPos = ParentBody->SimPos + LocalOffset;
+	}
+
+	const float OmegaRadPerSec = FMath::DegreesToRadians(OrgOrbitSpeedDeg);
+
+	const FVector AngularVelocity = OrbitAxis.GetSafeNormal() * OmegaRadPerSec;
+
+	if (ParentBody) {
+		OrbitVelocity = FVector::CrossProduct(AngularVelocity, LocalOffset) + ParentBody->GetOrbitVelocity();
+	}
+	else {
+		OrbitVelocity = FVector::CrossProduct(AngularVelocity, LocalOffset);
 	}
 }
 

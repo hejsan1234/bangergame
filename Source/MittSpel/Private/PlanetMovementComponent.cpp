@@ -353,12 +353,28 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     bWasAnchoredToPlanet = bAnchoredToPlanet;
 
     if (!bAnchoredToPlanet) {
-        if (MyChar) MyChar->SetControlMode(EControlMode::Space);
+        if (!MyChar) return;
+        if (!MyChar->IsSpaceMode()) {
+			bJustExitPlanet = true;
+		}
+        //UE_LOG(LogTemp, Warning, TEXT("Full Fvector speed with all axes: %s"), *Velocity.ToString());
+        MyChar->SetControlMode(EControlMode::Space);
         PhysFree(DeltaTime, Iterations);
+
+        if (bJustExitPlanet) {
+            UE_LOG(LogTemp, Warning, TEXT("Full Fvector speed with all axes: %s"), *Velocity.ToString());
+            Velocity += Planet->GetOrbitVelocity();
+            bJustExitPlanet = false;
+        }
+
         return;
     }
     else {
-        if (MyChar) MyChar->SetControlMode(EControlMode::Planet);
+        if (!MyChar) return;
+        if (MyChar->IsSpaceMode()) {
+            Velocity -= Planet->GetOrbitVelocity();
+        }
+        MyChar->SetControlMode(EControlMode::Planet);
         if (bJustEnteredPlanet)
         {
             OnEnterPlanet(Frame, DeltaTime);

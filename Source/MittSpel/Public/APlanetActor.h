@@ -105,6 +105,8 @@ public:
 		return SimPos - AnchorSimPos;
 	}
 
+	FVector GetOrbitVelocity() const { return OrbitVelocity; }
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -113,4 +115,7 @@ private:
 	void UpdateOrbit(float DeltaTime);
 	float OrbitAngleDeg = 0.f;
 	void UpdateSpawnPoint();
+
+	FVector OrbitVelocity = FVector::ZeroVector;
+	float OrgOrbitSpeedDeg = 0.f;
 };
