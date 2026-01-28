@@ -9,6 +9,7 @@
 
 #include "PlanetMovementComponent.h"
 #include "APlanetActor.h"
+#include <Kismet/GameplayStatics.h>
 
 AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UPlanetMovementComponent>(ACharacter::CharacterMovementComponentName))
@@ -45,6 +46,15 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ASolarSystemManager* SSM = Cast<ASolarSystemManager>(
+		UGameplayStatics::GetActorOfClass(GetWorld(), ASolarSystemManager::StaticClass())
+	);
+
+	if (SSM)
+	{
+		AddTickPrerequisiteActor(SSM);
+	}
 
 	if (UCharacterMovementComponent* MoveCompBase = GetCharacterMovement())
 	{

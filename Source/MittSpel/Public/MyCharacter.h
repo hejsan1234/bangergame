@@ -47,7 +47,7 @@ protected:
 	float MoveSpeed = 600.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float JumpHeight = 2500.0f;
+	float JumpHeight = 12000.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float Sensitivity = 0.5f;
@@ -80,7 +80,7 @@ protected:
 
 	bool  bBlendToPlanetCam = false;
 	float BlendTime = 0.f;
-	float BlendDuration = 0.7f;
+	float BlendDuration = 1.5f;
 
 	FQuat BlendStartCamWorld = FQuat::Identity;
 	FQuat BlendTargetCamWorld = FQuat::Identity;

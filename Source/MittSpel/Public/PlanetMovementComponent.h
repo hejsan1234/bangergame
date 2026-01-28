@@ -40,6 +40,8 @@ protected:
 
 	bool CheckGrounded(const FVector& Up, float ProbeDistance, FHitResult& OutHit);
 
+	virtual void BeginPlay() override;
+
 	//static void DrawCharacterDebug(
 	//	UWorld* World,
 	//	ACharacter* Char,
@@ -51,8 +53,8 @@ private:
 	bool bAnchoredToPlanet = false;
 	float JumpGroundIgnoreTime = 0.f;
 	float bPrev = 0;
-	float AnchorEnterMargin = 2000.f;
-	float AnchorExitMargin = 2000.f;
+	float AnchorEnterMargin = 8000.f;
+	float AnchorExitMargin = 8000.f;
 
 	bool EnsureSolarSystemManager();
 	AAPlanetActor* GetActivePlanet() const;
@@ -110,4 +112,5 @@ private:
 	int FrameAnchoredCount = 0;
 	bool bWasAnchoredToPlanet = false;
 	bool bJustExitPlanet = false;
+	bool bJustEnteredPlanetDelay = false;
 };

@@ -19,6 +19,20 @@ UPlanetMovementComponent::UPlanetMovementComponent()
     PlanetGravityScale = 1.0f;
 }
 
+void UPlanetMovementComponent::BeginPlay()
+{
+    Super::BeginPlay();
+
+    ASolarSystemManager* SSM = Cast<ASolarSystemManager>(
+        UGameplayStatics::GetActorOfClass(GetWorld(), ASolarSystemManager::StaticClass())
+    );
+
+    if (SSM)
+    {
+        AddTickPrerequisiteActor(SSM);
+    }
+}
+
 bool UPlanetMovementComponent::EnsureSolarSystemManager()
 {
     if (IsValid(SolarSystemManager))
@@ -352,17 +366,20 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     const bool bJustEnteredPlanet = (!bWasAnchoredToPlanet && bAnchoredToPlanet);
     bWasAnchoredToPlanet = bAnchoredToPlanet;
 
+    if (bJustEnteredPlanetDelay) {
+        Velocity -= Planet->GetOrbitVelocity();
+        bJustEnteredPlanetDelay = false;
+    }
+
     if (!bAnchoredToPlanet) {
         if (!MyChar) return;
         if (!MyChar->IsSpaceMode()) {
 			bJustExitPlanet = true;
 		}
-        //UE_LOG(LogTemp, Warning, TEXT("Full Fvector speed with all axes: %s"), *Velocity.ToString());
         MyChar->SetControlMode(EControlMode::Space);
         PhysFree(DeltaTime, Iterations);
 
         if (bJustExitPlanet) {
-            UE_LOG(LogTemp, Warning, TEXT("Full Fvector speed with all axes: %s"), *Velocity.ToString());
             Velocity += Planet->GetOrbitVelocity();
             bJustExitPlanet = false;
         }
@@ -371,12 +388,10 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
     }
     else {
         if (!MyChar) return;
-        if (MyChar->IsSpaceMode()) {
-            Velocity -= Planet->GetOrbitVelocity();
-        }
         MyChar->SetControlMode(EControlMode::Planet);
         if (bJustEnteredPlanet)
         {
+			bJustEnteredPlanetDelay = true;
             OnEnterPlanet(Frame, DeltaTime);
         }
     }
