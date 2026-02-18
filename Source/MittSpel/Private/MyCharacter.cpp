@@ -438,10 +438,6 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 
 	if (NewMode == EControlMode::Space)
 	{
-		// Dont Allow mesh update
-		UE_DEBUG_BREAK();
-		GetMesh()->bNoSkeletonUpdate = true;
-
 		if (Camera)
 		{
 			CameraOrientation = Camera->GetComponentQuat();
