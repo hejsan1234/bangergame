@@ -5,6 +5,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
+#include "UObject/ConstructorHelpers.h"
 #include "DrawDebugHelpers.h"
 
 #include "PlanetMovementComponent.h"
@@ -29,7 +30,9 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	Camera->SetupAttachment(CameraPivot);
 	Camera->bUsePawnControlRotation = false;
 
-	Camera->SetRelativeLocation(FVector(0.f, 0.f, 64.f));
+	CameraPivot->SetRelativeLocation(FVector(15.f, 0.f, 120.f));
+	Camera->SetRelativeLocation(FVector::ZeroVector); // org var 0 0 64
+	GetCapsuleComponent()->InitCapsuleSize(34.f, 120.f); // org var egenltigen borta men 34 88
 
 	PendingLookDirWorld = FVector::ForwardVector;
 
@@ -41,6 +44,19 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 		Move->BrakingDecelerationWalking = 7048.f;
 		Move->MaxAcceleration = 6048.f;
 	}
+
+	// CHARACTER MESH
+	
+	USkeletalMeshComponent* MeshComp = GetMesh();
+	MeshComp->SetupAttachment(GetCapsuleComponent());
+
+	MeshComp->SetRelativeScale3D(FVector(1.45f, 1.45f, 1.45f)); // testa 1.2–1.4
+
+	MeshComp->SetRelativeLocation(FVector(0.f, 0.f, -120.f));
+
+	MeshComp->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+
+	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AMyCharacter::BeginPlay()
@@ -81,6 +97,28 @@ void AMyCharacter::BeginPlay()
 	{
 		Camera->AttachToComponent(CameraPivot, FAttachmentTransformRules::KeepRelativeTransform);
 	}
+
+	// Load the skeletal mesh asset at runtime
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		const TCHAR* MannyRef =
+			TEXT("/Script/Engine.SkeletalMesh'/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple'");
+
+		USkeletalMesh* Manny = LoadObject<USkeletalMesh>(nullptr, MannyRef);
+		if (Manny)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Loaded Manny_Simple via LoadObject: %s"), *GetNameSafe(Manny));
+			MeshComp->SetSkeletalMesh(Manny);
+			MeshComp->SetVisibility(true, true);
+			MeshComp->SetHiddenInGame(false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("LoadObject failed for MannyRef"));
+		}
+	}
+
+	GetMesh()->HideBoneByName(HeadBoneName, EPhysBodyOp::PBO_None);
 }
 
 AAPlanetActor* AMyCharacter::GetCurrentPlanet() const
@@ -95,6 +133,42 @@ AAPlanetActor* AMyCharacter::GetCurrentPlanet() const
 void AMyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// DEBUG
+
+	// Capsule (collision)
+	//const float CapsuleRadius = GetCapsuleComponent()->GetScaledCapsuleRadius();
+	//const float CapsuleHalfHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+
+	//DrawDebugCapsule(
+	//	GetWorld(),
+	//	GetCapsuleComponent()->GetComponentLocation(),
+	//	CapsuleHalfHeight,
+	//	CapsuleRadius,
+	//	GetCapsuleComponent()->GetComponentQuat(),
+	//	FColor::Blue,
+	//	false,
+	//	0.f,
+	//	0,
+	//	2.f
+	//);
+
+	//// Mesh bounds (visual size)
+	//if (USkeletalMeshComponent* M = GetMesh())
+	//{
+	//	const FBoxSphereBounds B = M->Bounds;
+	//	DrawDebugBox(
+	//		GetWorld(),
+	//		B.Origin,
+	//		B.BoxExtent,
+	//		M->GetComponentQuat(),
+	//		FColor::Green,
+	//		false,
+	//		0.f,
+	//		0,
+	//		2.f
+	//	);
+	//}
 
 	if (IsSpaceMode())
 	{
@@ -116,10 +190,12 @@ void AMyCharacter::Tick(float DeltaTime)
 		if (Camera)
 		{
 			Camera->SetWorldRotation(CameraOrientation);
+
+			// BAD WAY TO DO THIS, BUT TEMPORARY # TODO: SET ACTORROTATION AND MAKE CAMERA RELATIVE TO ACTOR IN SPACE MODE INSTEAD OF SETTING WORLD ROTATION
+			SetActorRotation(CameraOrientation);
 		}
 	}
 
-	// 1) HOLD: lås kameran i exakt space-world-rotation
 	if (!IsSpaceMode() && bHoldSpaceCamInPlanet && Camera)
 	{
 		Camera->SetWorldRotation(HoldSpaceCamWorld);
@@ -127,13 +203,11 @@ void AMyCharacter::Tick(float DeltaTime)
 		if (HoldCamTicks > 0)
 		{
 			HoldCamTicks--;
-			return; // viktigt: gör inget mer denna frame
+			return;
 		}
 
-		// Hold klar -> starta BLEND
 		bHoldSpaceCamInPlanet = false;
 
-		// Vi behöver en stabil Up
 		const FVector Up = GetActorUpVector().GetSafeNormal();
 		const FVector Fwd = PendingLookDirWorld.GetSafeNormal();
 
@@ -144,16 +218,13 @@ void AMyCharacter::Tick(float DeltaTime)
 			PlanarFwd = FVector::CrossProduct(Up, Ref).GetSafeNormal();
 		}
 
-		// Actor target
 		PendingActorTargetQuat = FRotationMatrix::MakeFromXZ(PlanarFwd, Up).ToQuat();
 
-		// Pitch target
 		const float Sin = FVector::DotProduct(Fwd, Up);
 		const float Cos = FVector::DotProduct(Fwd, PlanarFwd);
 		const float PitchRad = FMath::Atan2(Sin, Cos);
 		PendingPlanetPitchDeg = FMath::Clamp(FMath::RadiansToDegrees(PitchRad), -85.f, 85.f);
 
-		// Bygg planet target camera world quat genom att temporärt sätta actor+pivot
 		const FQuat SavedActor = GetActorQuat();
 		const float SavedPitch = PitchDeg;
 
@@ -165,27 +236,24 @@ void AMyCharacter::Tick(float DeltaTime)
 
 		BlendTargetCamWorld = Camera->GetComponentQuat();
 
-		// Återställ direkt (vi vill inte att det ska hoppa nu)
 		SetActorRotation(SavedActor);
 		PitchDeg = SavedPitch;
 		if (CameraPivot) CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
 		Camera->SetWorldRotation(HoldSpaceCamWorld);
 
-		// Starta blend
 		bBlendToPlanetCam = true;
 		BlendTime = 0.f;
-		BlendDuration = 0.7f;          // gör 1.2f om du vill långsammare
+		BlendDuration = 0.7f;
 		BlendStartCamWorld = HoldSpaceCamWorld;
 
 		return;
 	}
 
-	// 2) BLEND: crossfade kamerans world rotation till planet-target
 	if (!IsSpaceMode() && bBlendToPlanetCam && Camera)
 	{
 		BlendTime += DeltaTime;
 		const float A = FMath::Clamp(BlendTime / BlendDuration, 0.f, 1.f);
-		const float S = A * A * (3.f - 2.f * A); // smoothstep
+		const float S = A * A * (3.f - 2.f * A);
 
 		const FQuat Q = FQuat::Slerp(BlendStartCamWorld, BlendTargetCamWorld, S).GetNormalized();
 		Camera->SetWorldRotation(Q);
@@ -194,12 +262,10 @@ void AMyCharacter::Tick(float DeltaTime)
 		{
 			bBlendToPlanetCam = false;
 
-			// COMMIT: sätt actor+pivot så att planet-systemet matchar exakt där kameran nu är
 			SetActorRotation(PendingActorTargetQuat);
 			PitchDeg = PendingPlanetPitchDeg;
 			if (CameraPivot) CameraPivot->SetRelativeRotation(FRotator(PitchDeg, 0.f, 0.f));
 
-			// nu kan vi gå tillbaka till relative
 			Camera->SetRelativeRotation(FRotator::ZeroRotator);
 		}
 
@@ -347,12 +413,35 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 	const EControlMode OldMode = ControlMode;
 	ControlMode = NewMode;
 
+	// Show/hide mesh based on mode
+	if (USkeletalMeshComponent* M = GetMesh())
+	{
+		const bool bShow = (NewMode == EControlMode::Planet);
+
+		M->SetHiddenInGame(!bShow);
+		M->SetVisibility(bShow, true);
+		M->SetCastShadow(bShow);
+
+		M->bPauseAnims = !bShow;
+		M->SetComponentTickEnabled(bShow);
+	}
+
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
+	if (OldMode == EControlMode::Planet && NewMode == EControlMode::Space)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Switching to Space Mode, pausing game to prevent physics issues"));
+		//GetWorld()->bDebugPauseExecution = true;
+	}
+
 	if (NewMode == EControlMode::Space)
 	{
+		// Dont Allow mesh update
+		UE_DEBUG_BREAK();
+		GetMesh()->bNoSkeletonUpdate = true;
+
 		if (Camera)
 		{
 			CameraOrientation = Camera->GetComponentQuat();

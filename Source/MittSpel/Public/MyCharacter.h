@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "MyCharacter.generated.h"
 
 class AAPlanetActor;
@@ -40,6 +41,9 @@ public:
 	UCameraComponent* GetCameraComponent() const { return Camera; }
 	USceneComponent* GetCameraPivot() const { return CameraPivot; }
 
+	UPROPERTY(EditDefaultsOnly, Category = "FirstPerson")
+	FName HeadBoneName = "head";
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -47,7 +51,7 @@ protected:
 	float MoveSpeed = 600.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
-	float JumpHeight = 12000.0f;
+	float JumpHeight = 1200.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
 	float Sensitivity = 0.5f;

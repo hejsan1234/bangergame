@@ -53,8 +53,8 @@ private:
 	bool bAnchoredToPlanet = false;
 	float JumpGroundIgnoreTime = 0.f;
 	float bPrev = 0;
-	float AnchorEnterMargin = 8000.f;
-	float AnchorExitMargin = 8000.f;
+	float AnchorEnterMargin = 16000.f;
+	float AnchorExitMargin = 16000.f;
 
 	bool EnsureSolarSystemManager();
 	AAPlanetActor* GetActivePlanet() const;
