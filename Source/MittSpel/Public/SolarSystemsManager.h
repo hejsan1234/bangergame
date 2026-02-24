@@ -7,6 +7,7 @@
 #include "APlanetActor.h"
 #include "SolarSystemsManager.generated.h"
 
+class ADirectionalLight;
 class AM_Skysphere;
 
 UCLASS()
@@ -40,10 +41,31 @@ public:
 	UPROPERTY(EditAnywhere, Category = "World Shift")
 	AM_Skysphere* SkySphereActor = nullptr;
 
+	// --- Lighting ---
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
+	ADirectionalLight* SunDirectionalLight = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
+	AAPlanetActor* SunBody = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
+	bool bLightTargetsAnchor = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
+	float LightYawOffsetDeg = 0.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
+	ADirectionalLight* SunFillLight = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
+	float FillLightAngleOffset = 10.f;
+
 protected:
 	virtual void Tick(float DeltaTime) override;
 
 private:
+	void UpdateSunLightDirection();
+
 	FVector AnchorSimPos = FVector::ZeroVector;
 	FVector PrevAnchorSimPos = FVector::ZeroVector;
 	AAPlanetActor* PrevAnchorBody = nullptr;

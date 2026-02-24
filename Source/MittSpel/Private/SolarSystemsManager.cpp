@@ -6,6 +6,9 @@
 #include <Kismet/GameplayStatics.h>
 #include "M_Skysphere.h"
 #include "GameFramework/Character.h"
+#include <Kismet/KismetMathLibrary.h>
+#include "Engine/DirectionalLight.h"
+#include "APlanetActor.h" 
 
 ASolarSystemManager::ASolarSystemManager()
 {
@@ -117,6 +120,8 @@ void ASolarSystemManager::Tick(float DeltaTime)
         Body->UpdateSpin(DeltaTime);
 		Body->SetActorRotation(Body->SimRot);
     }
+
+    UpdateSunLightDirection();
 }
 
 
@@ -128,6 +133,52 @@ void ASolarSystemManager::RequestAnchor(AAPlanetActor* Body)
 void ASolarSystemManager::ClearAnchorRequest()
 {
 	RequestedAnchorBody = nullptr;
+}
+
+void ASolarSystemManager::UpdateSunLightDirection()
+{
+    if (!SunDirectionalLight || !SunBody) return;
+
+    APawn* P = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+    if (!P) return;
+
+    const FVector SunLoc = SunBody->GetActorLocation();
+    const FVector PlayerLoc = P->GetActorLocation();
+
+    FVector Dir = (PlayerLoc - SunLoc).GetSafeNormal();
+    if (Dir.IsNearlyZero()) return;
+
+    FRotator SunRot = Dir.Rotation();
+    SunRot.Yaw += LightYawOffsetDeg;
+    SunDirectionalLight->SetActorRotation(SunRot);
+
+    if (SunFillLight)
+    {
+        FVector PlanetCenter = FVector::ZeroVector;
+        if (AnchorBody)
+        {
+            PlanetCenter = AnchorBody->GetActorLocation();
+        }
+        FVector Up = (PlayerLoc - PlanetCenter).GetSafeNormal();
+        if (Up.IsNearlyZero()) Up = FVector::UpVector;
+
+        FVector Axis = FVector::CrossProduct(Dir, Up).GetSafeNormal();
+
+        if (Axis.IsNearlyZero())
+        {
+            Axis = FVector::CrossProduct(Dir, FVector::RightVector).GetSafeNormal();
+            if (Axis.IsNearlyZero())
+                Axis = FVector::UpVector;
+        }
+
+        const float AngleDeg = -FillLightAngleOffset;
+        FVector FillDir = Dir.RotateAngleAxis(AngleDeg, Axis);
+
+        FRotator FillRot = FillDir.Rotation();
+        FillRot.Yaw += LightYawOffsetDeg;
+
+        SunFillLight->SetActorRotation(FillRot);
+    }
 }
 
 
