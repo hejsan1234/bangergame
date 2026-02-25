@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "APlanetActor.h"
+#include "Materials/MaterialParameterCollection.h"
 #include "SolarSystemsManager.generated.h"
 
 class ADirectionalLight;
@@ -53,12 +54,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
 	float LightYawOffsetDeg = 0.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
-	ADirectionalLight* SunFillLight = nullptr;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Lighting")
-	float FillLightAngleOffset = 10.f;
 
 protected:
 	virtual void Tick(float DeltaTime) override;

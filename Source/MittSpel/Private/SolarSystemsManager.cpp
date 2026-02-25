@@ -8,6 +8,7 @@
 #include "GameFramework/Character.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "Engine/DirectionalLight.h"
+#include "Kismet/KismetMaterialLibrary.h"
 #include "APlanetActor.h" 
 
 ASolarSystemManager::ASolarSystemManager()
@@ -137,48 +138,25 @@ void ASolarSystemManager::ClearAnchorRequest()
 
 void ASolarSystemManager::UpdateSunLightDirection()
 {
-    if (!SunDirectionalLight || !SunBody) return;
+    // Välj target-body (den planet som ska få korrekt solriktning)
+    AAPlanetActor* TargetBody = bLightTargetsAnchor ? AnchorBody : ActiveGravityBody;
 
-    APawn* P = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-    if (!P) return;
+    if (!SunDirectionalLight || !SunBody || !TargetBody)
+        return;
 
+    // OBS: vi använder ActorLocation eftersom du redan placerar bodies i ankarets frame varje tick:
+    // Body->SetActorLocation(Body->SimPos - AnchorSimPos);
     const FVector SunLoc = SunBody->GetActorLocation();
-    const FVector PlayerLoc = P->GetActorLocation();
+    const FVector TargetLoc = TargetBody->GetActorLocation();
 
-    FVector Dir = (PlayerLoc - SunLoc).GetSafeNormal();
-    if (Dir.IsNearlyZero()) return;
+    // Skydda mot NaN om de råkar vara samma position
+    if (SunLoc.Equals(TargetLoc, 0.01f))
+        return;
 
-    FRotator SunRot = Dir.Rotation();
-    SunRot.Yaw += LightYawOffsetDeg;
-    SunDirectionalLight->SetActorRotation(SunRot);
+    FRotator LookRot = UKismetMathLibrary::FindLookAtRotation(SunLoc, TargetLoc);
+    LookRot.Yaw += LightYawOffsetDeg; // 0 normalt, 180 om ljuset blir inverterat
 
-    if (SunFillLight)
-    {
-        FVector PlanetCenter = FVector::ZeroVector;
-        if (AnchorBody)
-        {
-            PlanetCenter = AnchorBody->GetActorLocation();
-        }
-        FVector Up = (PlayerLoc - PlanetCenter).GetSafeNormal();
-        if (Up.IsNearlyZero()) Up = FVector::UpVector;
-
-        FVector Axis = FVector::CrossProduct(Dir, Up).GetSafeNormal();
-
-        if (Axis.IsNearlyZero())
-        {
-            Axis = FVector::CrossProduct(Dir, FVector::RightVector).GetSafeNormal();
-            if (Axis.IsNearlyZero())
-                Axis = FVector::UpVector;
-        }
-
-        const float AngleDeg = -FillLightAngleOffset;
-        FVector FillDir = Dir.RotateAngleAxis(AngleDeg, Axis);
-
-        FRotator FillRot = FillDir.Rotation();
-        FillRot.Yaw += LightYawOffsetDeg;
-
-        SunFillLight->SetActorRotation(FillRot);
-    }
+    SunDirectionalLight->SetActorRotation(LookRot);
 }
 
 
