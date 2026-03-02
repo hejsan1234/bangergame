@@ -432,7 +432,6 @@ void AMyCharacter::SetControlMode(EControlMode NewMode)
 
 	if (OldMode == EControlMode::Planet && NewMode == EControlMode::Space)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Switching to Space Mode, pausing game to prevent physics issues"));
 		//GetWorld()->bDebugPauseExecution = true;
 	}
 

@@ -105,11 +105,15 @@ void ASolarSystemManager::Tick(float DeltaTime)
                 SkySphereActor->AddActorWorldOffset(Shift, false, nullptr, ETeleportType::TeleportPhysics);
             }
         }
+        if (AnchorBody && AnchorBody->GetHasEnemy())
+        {
+            AnchorBody->bSpawnEnemy = true;
+        }
     }
 
     PrevAnchorBody = AnchorBody;
 
-    // Rendera bodies i ankarets frame (kan fortfarande uppdateras varje tick)
+    // Rendera bodies i ankarets frame
     for (AAPlanetActor* Body : Bodies)
     {
         if (!Body) continue;
@@ -123,6 +127,12 @@ void ASolarSystemManager::Tick(float DeltaTime)
     }
 
     UpdateSunLightDirection();
+
+    if (AnchorBody && AnchorBody->bSpawnEnemy)
+    {
+        AnchorBody->SpawnEnemy();
+        AnchorBody->bSpawnEnemy = false;
+    }
 }
 
 
@@ -138,23 +148,19 @@ void ASolarSystemManager::ClearAnchorRequest()
 
 void ASolarSystemManager::UpdateSunLightDirection()
 {
-    // Välj target-body (den planet som ska få korrekt solriktning)
     AAPlanetActor* TargetBody = bLightTargetsAnchor ? AnchorBody : ActiveGravityBody;
 
     if (!SunDirectionalLight || !SunBody || !TargetBody)
         return;
 
-    // OBS: vi använder ActorLocation eftersom du redan placerar bodies i ankarets frame varje tick:
-    // Body->SetActorLocation(Body->SimPos - AnchorSimPos);
     const FVector SunLoc = SunBody->GetActorLocation();
     const FVector TargetLoc = TargetBody->GetActorLocation();
 
-    // Skydda mot NaN om de råkar vara samma position
     if (SunLoc.Equals(TargetLoc, 0.01f))
         return;
 
     FRotator LookRot = UKismetMathLibrary::FindLookAtRotation(SunLoc, TargetLoc);
-    LookRot.Yaw += LightYawOffsetDeg; // 0 normalt, 180 om ljuset blir inverterat
+    LookRot.Yaw += LightYawOffsetDeg;
 
     SunDirectionalLight->SetActorRotation(LookRot);
 }

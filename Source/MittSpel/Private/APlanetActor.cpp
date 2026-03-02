@@ -1,5 +1,6 @@
 #include "APlanetActor.h"
 #include "Components/StaticMeshComponent.h"
+#include "MyEnemy.h"
 
 AAPlanetActor::AAPlanetActor()
 {
@@ -134,4 +135,32 @@ void AAPlanetActor::UpdateSpawnPoint()
 	const float MarginLocal = MarginWS / Sz;
 
 	SpawnPoint->SetRelativeLocation(FVector(0.f, 0.f, Rlocal + MarginLocal));
+}
+
+void AAPlanetActor::SpawnEnemy()
+{
+	if (!EnemyClass) return;
+	UE_LOG(LogTemp, Warning, TEXT("Planet %s spawning enemy"), *GetName());
+	TArray<AActor*> AttachedActors;
+	GetAttachedActors(AttachedActors);
+
+	FTransform SpawnTransform = GetSpawnTransform();
+
+	for (AActor* Actor : AttachedActors)
+	{
+		if (Actor->ActorHasTag("Spawn"))
+		{
+			SpawnTransform = Actor->GetActorTransform();
+			break;
+		}
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
+	GetWorld()->SpawnActor<AMyEnemy>(
+		EnemyClass,
+		SpawnTransform,
+		SpawnParams
+	);
 }

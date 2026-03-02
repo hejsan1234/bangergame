@@ -6,6 +6,9 @@
 
 class UStaticMeshComponent;
 class AAPlanetActor;
+class AMyEnemy;
+
+// TODO: Build planet-local HISM vegetation paint tool (editor) so foliage follows moving planets
 
 UCLASS()
 class MITTSPEL_API AAPlanetActor : public AActor
@@ -106,6 +109,18 @@ public:
 	}
 
 	FVector GetOrbitVelocity() const { return OrbitVelocity; }
+
+	// Enemy Spawn
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AMyEnemy> EnemyClass;
+
+	void SpawnEnemy();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Spawn")
+	bool bHasEnemy = false;
+	bool bSpawnEnemy = false;
+
+	bool GetHasEnemy() const { return bHasEnemy; }
 
 protected:
 	virtual void BeginPlay() override;
