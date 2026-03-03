@@ -13,7 +13,7 @@ class MITTSPEL_API AMyEnemy : public ACharacter
 
 public:
 	// Sets default values for this character's properties
-	AMyEnemy();
+	AMyEnemy(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

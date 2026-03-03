@@ -49,7 +49,6 @@ protected:
 	//	const FVector& FrameCenter
 	//);
 
-private:
 	bool bAnchoredToPlanet = false;
 	float JumpGroundIgnoreTime = 0.f;
 	float bPrev = 0;

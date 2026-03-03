@@ -157,6 +157,7 @@ void AAPlanetActor::SpawnEnemy()
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	SpawnParams.Owner = this;
 
 	GetWorld()->SpawnActor<AMyEnemy>(
 		EnemyClass,
