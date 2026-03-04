@@ -92,6 +92,18 @@ protected:
 	FQuat PendingActorTargetQuat = FQuat::Identity;
 	float PendingPlanetPitchDeg = 0.f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<class AProjectile> ProjectileClass;
+
+	UFUNCTION()
+	void Fire();
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	TObjectPtr<class UStaticMeshComponent> WeaponMesh;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+	TObjectPtr<class USceneComponent> Muzzle;
+
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;

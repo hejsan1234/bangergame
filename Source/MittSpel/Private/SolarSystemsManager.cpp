@@ -131,6 +131,36 @@ void ASolarSystemManager::Tick(float DeltaTime)
     if (AnchorBody && AnchorBody->bSpawnEnemy)
     {
         AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
+        AnchorBody->SpawnEnemy();
         AnchorBody->bSpawnEnemy = false;
     }
 }

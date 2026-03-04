@@ -159,9 +159,12 @@ void AAPlanetActor::SpawnEnemy()
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 	SpawnParams.Owner = this;
 
+	UE_LOG(LogTemp, Warning, TEXT("SpawnEnemy called. EnemyClass=%s"), *GetNameSafe(EnemyClass));
+
 	GetWorld()->SpawnActor<AMyEnemy>(
 		EnemyClass,
 		SpawnTransform,
 		SpawnParams
 	);
+	UE_LOG(LogTemp, Warning, TEXT("Spawn result = %s"), *GetNameSafe(EnemyClass));
 }

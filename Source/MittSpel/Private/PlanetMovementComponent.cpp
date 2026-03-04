@@ -234,7 +234,6 @@ void UPlanetMovementComponent::ApplyNoInputBraking(
     FVector& InOutTangentVel
 )
 {
-    // ersätter båda dina block: om ingen input, bromsa tangent-velocity men behåll radial-del
     if (!MoveDir.IsNearlyZero())
         return;
 

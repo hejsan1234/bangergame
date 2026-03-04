@@ -13,6 +13,10 @@ protected:
 	virtual void PhysCustom(float DeltaTime, int32 Iterations) override;
 
 	virtual void BeginPlay() override;
-public:
 
+	FVector AIInput = FVector::ZeroVector;
+
+	FVector ReadAIMoveDirOnTangent(const FVector& Up) const;
+public:
+	void SetAIInput(const FVector& NewInput) { AIInput = NewInput; }
 };
