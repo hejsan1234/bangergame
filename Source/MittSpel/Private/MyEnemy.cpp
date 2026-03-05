@@ -34,7 +34,7 @@ AMyEnemy::AMyEnemy(const FObjectInitializer& ObjectInitializer)
 
 	MeshComp->SetRelativeScale3D(FVector(1.45f, 1.45f, 1.45f)); // testa 1.2–1.4
 
-	MeshComp->SetRelativeLocation(FVector(0.f, 0.f, -120.f));
+	MeshComp->SetRelativeLocation(FVector(0.f, 0.f, -140.f));
 
 	MeshComp->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 
