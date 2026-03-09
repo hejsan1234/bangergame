@@ -444,7 +444,7 @@ void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
 
 
     const float MaxSpeed = GetMaxSpeed() * 1000;
-    const float MaxAccel = GetMaxAcceleration();
+    const float MaxAccel = GetMaxAcceleration()*10;
 
     const FVector Accel = ComputeInputAcceleration(MoveDir, Velocity, MaxAccel, MaxSpeed, DeltaTime);
     Velocity += Accel * DeltaTime;
