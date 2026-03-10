@@ -265,10 +265,10 @@ void UPlanetMovementComponent::TryApplyPlanetJump(const FVector& Up, float Gravi
     if (!MyChar || !MyChar->IsPlanetJumping() || !bGrounded)
         return;
 
-    float JumpHeight = CharacterOwner->GetCharacterMovement()->JumpZVelocity;
-    float JumpVelocityMagnitude = FMath::Sqrt(2.f * GravityStrength * PlanetGravityScale * JumpHeight);
+    float JumpVelocity = CharacterOwner->GetCharacterMovement()->JumpZVelocity;
+    //float JumpVelocityMagnitude = FMath::Sqrt(2.f * GravityStrength * PlanetGravityScale * JumpHeight);
 
-    Velocity += Up * JumpVelocityMagnitude;
+    Velocity += Up * JumpVelocity;
 	JumpGroundIgnoreTime = 0.12f;
 }
 

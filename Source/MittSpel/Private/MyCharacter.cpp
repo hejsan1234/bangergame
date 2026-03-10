@@ -20,7 +20,7 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 
-	MoveSpeed = 1600.0f;
+	MoveSpeed = 1200;
 
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
@@ -366,14 +366,14 @@ void AMyCharacter::MoveUp(float Value)
 	if (Value == 0.f) {
 		if (Move)
 		{
-			Move->MaxCustomMovementSpeed = 1600.f;
+			Move->MaxCustomMovementSpeed = MoveSpeed;
 		}
 		return;
 	}
 
 	if (!IsSpaceMode()) {
 		if (Value > 0.1f)
-			Move->MaxCustomMovementSpeed = 15000.f;
+			Move->MaxCustomMovementSpeed = MoveSpeed*2.4f;
 	}
 	else {
 		const FVector Up = CameraOrientation.GetUpVector().GetSafeNormal();

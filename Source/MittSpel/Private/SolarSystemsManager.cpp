@@ -63,30 +63,50 @@ void ASolarSystemManager::Tick(float DeltaTime)
 
     if (bAnchorChanged)
     {
-        UE_LOG(LogTemp, Warning, TEXT("ANCHOR CHANGED)"));
-        if (PrevAnchorBody != nullptr)
+        for (AAPlanetActor* Body : Bodies)
         {
-            PrevAnchorBody->SetSpinSpeedDegPerSec(PrevSpin);
-            PrevAnchorBody->SetOrbitSpeedDegPerSec(PrevOrbit);
-        }
+            if (!Body) continue;
 
-        if (AnchorBody != nullptr)
-        {
-            float AnchorSpinDeg = AnchorBody->GetSpinDegPerSec();
-            float AnchorOrbitSpeedDeg = AnchorBody->GetOrbitSpeedDegPerSec();
+            if (AnchorBody != nullptr) {
+                float AnchorSpinDeg = AnchorBody->GetSpinDegPerSec();
+                float AnchorOrbitSpeedDeg = AnchorBody->GetOrbitSpeedDegPerSec();
+                if (AnchorBody->isMoon) {
+                    if (Body == AnchorBody) {
+                        Body->SetSpinSpeedDegPerSec(0.f);
+                        Body->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg - AnchorSpinDeg);
 
-            PrevSpin = AnchorSpinDeg;
-            PrevOrbit = AnchorOrbitSpeedDeg;
+                        SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg / 4);
+                    }
+                    else {
+						if (Body->isMoon) {
+                            Body->SetOrbitSpeedDegPerSec(Body->GetOrgOrbitSpeed() - AnchorSpinDeg);
+                            Body->SetSpinSpeedDegPerSec(Body->GetOrgSpinSpeed() - AnchorSpinDeg);
+						}
+                        else {
+                            Body->SetOrbitSpeedDegPerSec(-(Body->GetOrgOrbitSpeed()));
+                            Body->SetSpinSpeedDegPerSec(-(Body->GetOrgSpinSpeed()));
+                        }
+                    }
+                }
+                else
+                {
+                    if (Body == AnchorBody) {
+                        Body->SetSpinSpeedDegPerSec(0.f);
+                        Body->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg - AnchorSpinDeg);
 
-            AnchorBody->SetSpinSpeedDegPerSec(0.f);
-            AnchorBody->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg - AnchorSpinDeg);
-			if (AnchorBody->isMoon)
-                SkySphereActor->SetOrbitSpeedDegPerSec(-AnchorOrbitSpeedDeg / 4);
-            else
-                SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg/4);
-		}
-        else {
-            SkySphereActor->SetOrbitSpeedDegPerSec(0.f);
+                        SkySphereActor->SetOrbitSpeedDegPerSec(AnchorOrbitSpeedDeg / 4);
+                    }
+                    else {
+                        Body->SetOrgOrbitSpeedDegPerSec();
+                        Body->SetOrgSpinSpeedDegPerSec();
+                    }
+                }
+            }
+            else {
+                Body->SetOrgOrbitSpeedDegPerSec();
+                Body->SetOrgSpinSpeedDegPerSec();
+                SkySphereActor->SetOrbitSpeedDegPerSec(0.f);
+            }
         }
 
         const FVector Shift = OldAnchorSimPos - AnchorSimPos;

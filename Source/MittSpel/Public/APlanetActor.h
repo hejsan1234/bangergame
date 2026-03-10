@@ -60,6 +60,9 @@ public:
 	UFUNCTION(BluePrintCallable, Category = "Orbit")
 	void SetOrbitSpeedDegPerSec(float NewOrbitSpeed) { OrbitSpeedDegPerSec = NewOrbitSpeed; }
 
+	UFUNCTION(BluePrintCallable, Category = "Orbit")
+	void SetOrgOrbitSpeedDegPerSec() { OrbitSpeedDegPerSec = OrgOrbitSpeedDeg; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Orbit")
 	FVector OrbitAxis = FVector::UpVector;
 
@@ -82,6 +85,9 @@ public:
 
 	UFUNCTION(BluePrintCallable, Category = "spin")
 	void SetSpinSpeedDegPerSec(float NewSpinSpeed) { SpinSpeedDegPerSec = NewSpinSpeed; }
+
+	UFUNCTION(BluePrintCallable, Category = "spin")
+	void SetOrgSpinSpeedDegPerSec() { SpinSpeedDegPerSec = OrgSpinSpeedDeg; }
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spin")
 	float SpinAngleDeg = 0.f;
@@ -110,6 +116,9 @@ public:
 
 	FVector GetOrbitVelocity() const { return OrbitVelocity; }
 
+	float GetOrgOrbitSpeed() const { return OrgOrbitSpeedDeg; }
+	float GetOrgSpinSpeed() const { return OrgSpinSpeedDeg; }
+
 	// Enemy Spawn
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AMyEnemy> EnemyClass;
@@ -133,4 +142,5 @@ private:
 
 	FVector OrbitVelocity = FVector::ZeroVector;
 	float OrgOrbitSpeedDeg = 0.f;
+	float OrgSpinSpeedDeg = 0.f;
 };

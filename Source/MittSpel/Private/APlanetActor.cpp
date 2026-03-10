@@ -20,6 +20,8 @@ void AAPlanetActor::BeginPlay()
 	OrbitAxis = OrbitAxis.GetSafeNormal();
 
 	SimPos = GetActorLocation();
+	OrgOrbitSpeedDeg = OrbitSpeedDegPerSec;
+	OrgSpinSpeedDeg = SpinSpeedDegPerSec;
 
 	if (ParentBody)
 	{
