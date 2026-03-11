@@ -161,7 +161,13 @@ void UPlanetMovementComponent::MoveCapsuleAndResolveCollisions(const FVector& Up
 		// Apply gravity when not grounded
         const FVector& DirToCenter = Frame.DirToCenter;
         const float GravityStrength = Planet->GravityStrength;
-        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime;
+		const float PlanetRadius = Frame.Surface;
+		const float Distance = Frame.Distance;
+
+        const float SafeDistance = FMath::Max(Distance, PlanetRadius);
+        const float Falloff = FMath::Square(PlanetRadius / SafeDistance);
+
+        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime * Falloff;
     }
 }
 
@@ -463,7 +469,40 @@ void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
         Velocity = FVector::VectorPlaneProject(Velocity, Hit.Normal);
     }
 
-    //UE_LOG(LogTemp, Warning, TEXT("Free speed: %f"), Velocity.Size());
+
+    // Gravitation när man inte är ankard till en planet
+    AAPlanetActor* GravPlanet = GetActivePlanet();
+    if (GravPlanet) {
+        const FVector AnchorSim = IsValid(SolarSystemManager)
+            ? SolarSystemManager->GetAnchorSimPos()
+            : FVector::ZeroVector;
+
+        const FVector Center = GravPlanet->GetCenterInFrame(AnchorSim);
+        const FVector Pos = UpdatedComponent->GetComponentLocation();
+
+        //UE_LOG(LogTemp, Warning, TEXT("POS: %s"), *OutFrame.Pos.ToString());
+
+        FVector ToCenter = Center - Pos;
+        const float Distance = ToCenter.Size();
+
+        const float PlanetRadius = Planet->GetPlanetRadiusWS();
+
+        if (Distance < KINDA_SMALL_NUMBER)
+            return;
+
+        const FVector DirToCenter = ToCenter / Distance;
+        const float GravityStrength = GravPlanet->GravityStrength;
+
+        const float SafeDistance = FMath::Max(Distance, PlanetRadius);
+        const float Falloff = FMath::Square(PlanetRadius / SafeDistance);
+
+        Velocity += DirToCenter * GravityStrength * PlanetGravityScale * DeltaTime * Falloff;
+    }
+    else {
+		UE_LOG(LogTemp, Warning, TEXT("Ingen gravitationsplanet i närheten"));
+    }
+
+    UE_LOG(LogTemp, Warning, TEXT("Free speed: %f"), Velocity.Size());
 }
 
 bool UPlanetMovementComponent::CheckGrounded(

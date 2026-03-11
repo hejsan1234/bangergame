@@ -82,9 +82,13 @@ void ASolarSystemManager::Tick(float DeltaTime)
                             Body->SetOrbitSpeedDegPerSec(Body->GetOrgOrbitSpeed() - AnchorSpinDeg);
                             Body->SetSpinSpeedDegPerSec(Body->GetOrgSpinSpeed() - AnchorSpinDeg);
 						}
-                        else {
+                        else if (Body == AnchorBody->ParentBody) {
                             Body->SetOrbitSpeedDegPerSec(-(Body->GetOrgOrbitSpeed()));
                             Body->SetSpinSpeedDegPerSec(-(Body->GetOrgSpinSpeed()));
+                        }
+                        else {
+                            Body->SetOrbitSpeedDegPerSec(Body->GetOrgOrbitSpeed());
+                            Body->SetSpinSpeedDegPerSec(Body->GetOrgSpinSpeed());
                         }
                     }
                 }
