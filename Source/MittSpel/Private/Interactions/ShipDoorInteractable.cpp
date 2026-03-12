@@ -1,8 +1,8 @@
-#include "ShipDoorInteractable.h"
+#include "Interactions/ShipDoorInteractable.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Spaceship.h"
-#include "MyCharacter.h"
+#include "Ships/Spaceship.h"
+#include "Characters/MyCharacter.h"
 
 AShipDoorInteractable::AShipDoorInteractable()
 {

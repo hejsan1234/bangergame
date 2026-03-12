@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "GameFramework/CharacterMovementComponent.h"
 
-#include "MyEnemy.h"
+#include "Characters/MyEnemy.h"
 #include "Components/CapsuleComponent.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
-#include "MyEnemyMovementComponent.h"
+#include "Characters/MyEnemyMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 // Sets default values

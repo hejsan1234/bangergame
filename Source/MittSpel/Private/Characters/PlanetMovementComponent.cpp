@@ -1,16 +1,16 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "PlanetMovementComponent.h"
-#include "APlanetActor.h"
-#include "SolarSystemsManager.h"
+#include "Characters/PlanetMovementComponent.h"
+#include "Planets/APlanetActor.h"
+#include "Planets/SolarSystemsManager.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Character.h" // Add this include to resolve the incomplete type error for ACharacter
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
-#include "MyCharacter.h"
+#include "Characters/MyCharacter.h"
 
 // Add this as a member variable in your UPlanetMovementComponent class (in the header file, e.g., PlanetMovementComponent.h):
 

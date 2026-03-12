@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "MyCharacter.h"
+#include "Characters/MyCharacter.h"
 
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,12 +10,15 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 
-#include "PlanetMovementComponent.h"
-#include "APlanetActor.h"
+#include "Characters/PlanetMovementComponent.h"
+#include "Planets/APlanetActor.h"
+
 #include "Projectile.h"
-#include "InteractiveComponent.h"
+
+#include "Interactions/InteractiveComponent.h"
+
 #include "Components/InputComponent.h"
-#include <Kismet/GameplayStatics.h>
+#include "Kismet/GameplayStatics.h"
 
 AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UPlanetMovementComponent>(ACharacter::CharacterMovementComponentName))

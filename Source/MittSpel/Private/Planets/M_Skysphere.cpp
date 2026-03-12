@@ -1,12 +1,12 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "M_Skysphere.h"
+#include "Planets/M_Skysphere.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/StaticMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "SolarSystemsManager.h"
+#include "Planets/SolarSystemsManager.h"
 // Sets default values
 AM_Skysphere::AM_Skysphere()
 {

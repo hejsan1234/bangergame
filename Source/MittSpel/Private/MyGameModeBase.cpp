@@ -2,7 +2,7 @@
 
 
 #include "MyGameModeBase.h"
-#include "MyCharacter.h"
+#include "Characters/MyCharacter.h"
 
 AMyGameModeBase::AMyGameModeBase()
 {

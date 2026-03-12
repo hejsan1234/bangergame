@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "SolarSystemsManager.h"
+#include "Planets/SolarSystemsManager.h"
 #include "PlanetMovementComponent.generated.h"
 
 class AAPlanetActor;

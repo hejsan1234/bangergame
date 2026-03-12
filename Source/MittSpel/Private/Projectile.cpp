@@ -5,7 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "UObject/ConstructorHelpers.h"
-#include "MyEnemy.h"
+#include "Characters/MyEnemy.h"
 
 // Sets default values
 AProjectile::AProjectile()

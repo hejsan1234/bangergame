@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "InteractiveComponent.h"
-#include "InteractableInterface.h"
-#include "MyCharacter.h"
+#include "Interactions/InteractiveComponent.h"
+#include "Interactions/InteractableInterface.h"
+#include "Characters/MyCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
 #include "DrawDebugHelpers.h"

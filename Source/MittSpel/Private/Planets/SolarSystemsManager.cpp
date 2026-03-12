@@ -2,14 +2,14 @@
 
 // TODO FIXA SÅ ATT OM EN PLANET HAR SAMMA ROTATION SOM OMLOPPSBANA SÄTT ROTATION TILL NOLL OCH ROTERA SKYSPHEREN RUNT ORBITAXIS ISTÄLLET   
 
-#include "SolarSystemsManager.h"
+#include "Planets/SolarSystemsManager.h"
 #include <Kismet/GameplayStatics.h>
-#include "M_Skysphere.h"
+#include "Planets/M_Skysphere.h"
 #include "GameFramework/Character.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "Engine/DirectionalLight.h"
 #include "Kismet/KismetMaterialLibrary.h"
-#include "APlanetActor.h" 
+#include "Planets/APlanetActor.h" 
 
 ASolarSystemManager::ASolarSystemManager()
 {

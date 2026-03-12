@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "SeatPointInteractable.h"
+#include "Interactions/SeatPointInteractable.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Spaceship.h"
-#include "MyCharacter.h"
+#include "Ships/Spaceship.h"
+#include "Characters/MyCharacter.h"
 
 // Sets default values
 ASeatPointInteractable::ASeatPointInteractable()

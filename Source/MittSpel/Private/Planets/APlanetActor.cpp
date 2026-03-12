@@ -1,6 +1,6 @@
-#include "APlanetActor.h"
+#include "Planets/APlanetActor.h"
 #include "Components/StaticMeshComponent.h"
-#include "MyEnemy.h"
+#include "Characters/MyEnemy.h"
 
 AAPlanetActor::AAPlanetActor()
 {

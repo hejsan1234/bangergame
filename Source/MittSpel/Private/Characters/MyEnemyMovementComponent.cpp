@@ -1,4 +1,4 @@
-#include "MyEnemyMovementComponent.h"
+#include "Characters/MyEnemyMovementComponent.h"
 #include "GameFramework/Character.h"
 
 void UMyEnemyMovementComponent::BeginPlay()

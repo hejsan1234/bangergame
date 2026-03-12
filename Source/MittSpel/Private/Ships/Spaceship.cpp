@@ -1,8 +1,8 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Spaceship.h"
-#include "MyCharacter.h"
+#include "Ships/Spaceship.h"
+#include "Characters/MyCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
