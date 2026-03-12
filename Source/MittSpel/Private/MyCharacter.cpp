@@ -13,6 +13,8 @@
 #include "PlanetMovementComponent.h"
 #include "APlanetActor.h"
 #include "Projectile.h"
+#include "InteractiveComponent.h"
+#include "Components/InputComponent.h"
 #include <Kismet/GameplayStatics.h>
 
 AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
@@ -74,28 +76,28 @@ AMyCharacter::AMyCharacter(const FObjectInitializer& ObjectInitializer)
 
 	// Weapon mesh
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->SetupAttachment(GetMesh()); // fäst på skeletal mesh (bra i 3rd person)
+	WeaponMesh->SetupAttachment(GetMesh());
 	WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	// Placera bredvid spelaren (tweak dessa)
 	WeaponMesh->SetRelativeLocation(FVector(-35.f, 125.f, 130.f));   // fram, höger, upp
 	WeaponMesh->SetRelativeRotation(FRotator(0.f, 0.f, 0.f));
 	WeaponMesh->SetRelativeScale3D(FVector(0.2f));
 
-	// Valfri enkel mesh till vapnet (en “Cube” så du ser något direkt)
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
 	if (CubeMesh.Succeeded())
 	{
 		WeaponMesh->SetStaticMesh(CubeMesh.Object);
 	}
 
-	// Muzzle point (där projektilen ska spawnas)
 	Muzzle = CreateDefaultSubobject<USceneComponent>(TEXT("Muzzle"));
 	Muzzle->SetupAttachment(WeaponMesh);
 
-	// Placera mynningen längst fram på “vapnet”
 	Muzzle->SetRelativeLocation(FVector(60.f, 0.f, 0.f));
 	Muzzle->SetRelativeRotation(FRotator::ZeroRotator);
+
+	// INTERACTION
+
+	InteractiveComponent = CreateDefaultSubobject<UInteractiveComponent>(TEXT("InteractionComponent"));
 }
 
 void AMyCharacter::BeginPlay()
@@ -328,6 +330,8 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMyCharacter::StopJump);
 
 	PlayerInputComponent->BindAction("Fire", IE_Pressed, this, &AMyCharacter::Fire);
+
+	PlayerInputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &AMyCharacter::InteractPressed);
 }
 
 void AMyCharacter::MoveForward(float Value)
@@ -445,6 +449,14 @@ void AMyCharacter::StartJump()
 void AMyCharacter::StopJump()
 {
 	bIsJumping = false;
+}
+
+void AMyCharacter::InteractPressed()
+{
+	if (InteractiveComponent)
+	{
+		InteractiveComponent->TryInteract();
+	}
 }
 
 void AMyCharacter::SetControlMode(EControlMode NewMode)

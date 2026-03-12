@@ -57,6 +57,12 @@ bool UPlanetMovementComponent::EnsureMovementPrereqs(float DeltaTime, int32 Iter
     EnsureSolarSystemManager();
     AMyCharacter* Mychar = Cast<AMyCharacter>(CharacterOwner);
     AAPlanetActor* GravPlanet = GetActivePlanet();
+
+    if (Mychar->GetIsSeated()) {
+		Velocity = FVector::ZeroVector;
+        return false;
+    }
+
     if (!GravPlanet)
     {
         //if (Mychar) Mychar->SetControlMode(EControlMode::Space);
@@ -446,8 +452,13 @@ void UPlanetMovementComponent::PhysCustom(float DeltaTime, int32 Iterations)
 
 void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
 {
-    const FVector MoveDir = GetLastInputVector().GetClampedToMaxSize(1.f);
+    AMyCharacter* Mychar = Cast<AMyCharacter>(CharacterOwner);
+    if (Mychar->GetIsSeated()) {
+        Velocity = FVector::ZeroVector;
+        return;
+    }
 
+    const FVector MoveDir = GetLastInputVector().GetClampedToMaxSize(1.f);
 
     const float MaxSpeed = GetMaxSpeed() * 1000;
     const float MaxAccel = GetMaxAcceleration()*10;
@@ -502,7 +513,7 @@ void UPlanetMovementComponent::PhysFree(float DeltaTime, int32 Iterations)
 		UE_LOG(LogTemp, Warning, TEXT("Ingen gravitationsplanet i närheten"));
     }
 
-    UE_LOG(LogTemp, Warning, TEXT("Free speed: %f"), Velocity.Size());
+    //UE_LOG(LogTemp, Warning, TEXT("Free speed: %f"), Velocity.Size());
 }
 
 bool UPlanetMovementComponent::CheckGrounded(

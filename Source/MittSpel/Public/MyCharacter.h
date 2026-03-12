@@ -11,6 +11,7 @@ class AAPlanetActor;
 class UPlanetMovementComponent;
 class UCameraComponent;
 class USceneComponent;
+class UInteractiveComponent;
 
 UENUM()
 enum class EControlMode : uint8
@@ -104,6 +105,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Weapon")
 	TObjectPtr<class USceneComponent> Muzzle;
 
+	bool bIsSeated = false;
+
+
 public:
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -117,4 +121,14 @@ public:
 
 	void StartJump();
 	void StopJump();
+
+	// INTERACTION
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UInteractiveComponent* InteractiveComponent;
+
+	void InteractPressed();
+
+	bool GetIsSeated() const { return bIsSeated; }	
+	void SetIsSeated(bool bNewIsSeated) { bIsSeated = bNewIsSeated; }
 };
